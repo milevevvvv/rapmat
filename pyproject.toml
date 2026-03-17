@@ -25,6 +25,12 @@ dependencies = [
 
 ]
 
+license = "GPL-3.0-or-later"
+authors = [{ name = "Michael Levenets", email = "milevev256@gmail.com" }]
+
+[project.urls]
+Homepage = "https://github.com/milevevvvv/rapmat"
+
 [project.optional-dependencies]
 mattersim = ["mattersim>=1.2.0"]
 nequip = ["nequip>=0.16.2"]
