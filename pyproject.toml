@@ -22,7 +22,7 @@ dependencies = [
     "surrealdb>=2.0.0a1",
     "matplotlib>=3.8.0",
     "pytest>=8.0.0",
-
+    "platformdirs>=4.9.4",
 ]
 
 license = "GPL-3.0-or-later"
