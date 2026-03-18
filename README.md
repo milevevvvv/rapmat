@@ -27,7 +27,7 @@ pip install rapmat[all-calculators]
 
 ## Usage
 
-Just run it's TUI:
+Just run its TUI:
 
 ```bash
 rapmat
