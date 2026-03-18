@@ -1,7 +1,7 @@
 [project]
 name = "rapmat"
 version = "0.1.3"
-description = "Rapmat rapid materials discovery"
+description = "Rapmat - rapid materials discovery using MLIPs and random search"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
@@ -34,8 +34,8 @@ Homepage = "https://github.com/milevevvvv/rapmat"
 [project.optional-dependencies]
 mattersim = ["mattersim>=1.2.0"]
 nequip = ["nequip>=0.16.2"]
-upet = ["upet"]
-all-calculators = ["mattersim>=1.2.0", "nequip>=0.16.2", "upet"]
+upet = ["upet>=0.2.1"]
+all-calculators = ["mattersim>=1.2.0", "nequip>=0.16.2", "upet>=0.2.1"]
 
 [build-system]
 requires = ["hatchling"]
