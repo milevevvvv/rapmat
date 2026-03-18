@@ -99,7 +99,7 @@ def run_processing_loop(
 
     def _run_loop():
         nonlocal counter, discarded_thick, discarded_conv, discarded_sanity
-        nonlocal discarded_unstable, discarded_dup, discarded_candidate_dup, task
+        nonlocal discarded_unstable, discarded_dup, discarded_candidate_dup
         nonlocal calculator
 
         for candidate in candidates:
