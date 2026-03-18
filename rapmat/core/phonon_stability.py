@@ -53,15 +53,6 @@ def compute_dynamical_stability_for_results(
     updated = False
     total = len(target_results)
 
-    for i, (result_index, result) in enumerate(target_results):
-        msg = f"Structure {i + 1}/{total}: {result.get('formula', '')}"
-        if progress_callback is not None:
-            progress_callback(i, total, msg)
-        _process_one(result_index, result)
-
-    if progress_callback is not None:
-        progress_callback(total, total, "Done")
-
     def _process_one(result_index: int, result: dict) -> None:
         nonlocal updated
         structure_index = result.get("structure_index", result_index)
@@ -101,5 +92,14 @@ def compute_dynamical_stability_for_results(
             result["min_phonon_freq"] = None
             result["dynamical_stability"] = None
             updated = True
+
+    for i, (result_index, result) in enumerate(target_results):
+        msg = f"Structure {i + 1}/{total}: {result.get('formula', '')}"
+        if progress_callback is not None:
+            progress_callback(i, total, msg)
+        _process_one(result_index, result)
+
+    if progress_callback is not None:
+        progress_callback(total, total, "Done")
 
     return updated
