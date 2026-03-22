@@ -66,7 +66,10 @@ def compute_dynamical_stability_for_results(
             result["dynamical_stability"] = None
             return
 
+        from rapmat.utils.structure import standardize_atoms
+        
         atoms = structures[structure_index]
+        atoms = standardize_atoms(atoms, to_primitive=True)
         atoms.calc = calculator
 
         try:
