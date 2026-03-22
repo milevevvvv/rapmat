@@ -65,6 +65,43 @@ def get_spacegroup_info(atoms: Atoms, symprec: float = 1e-3) -> Tuple[str, int]:
     return symbol, number
 
 
+def standardize_atoms(
+    atoms: Atoms, 
+    symprec: float = 1e-3, 
+    to_primitive: bool = False, 
+    no_idealize: bool = False
+) -> Atoms:
+    """Standardize an ASE Atoms cell using spglib.
+    
+    If spglib cannot standardize the cell, returns a copy of the original atoms object.
+    Preserves the `info` dictionary attached to the atoms.
+    """
+    cell = (
+        atoms.get_cell().array,
+        atoms.get_scaled_positions(wrap=False),
+        atoms.get_atomic_numbers(),
+    )
+    result = spglib.standardize_cell(
+        cell, 
+        to_primitive=to_primitive, 
+        no_idealize=no_idealize, 
+        symprec=symprec
+    )
+    if result is None:
+        return atoms.copy()
+        
+    lattice, positions, numbers = result
+    
+    new_atoms = Atoms(
+        numbers=numbers,
+        scaled_positions=positions,
+        cell=lattice,
+        pbc=True,
+    )
+    new_atoms.info = atoms.info.copy()
+    return new_atoms
+
+
 def format_spg(atoms: Optional[Atoms], symprec: float = 1e-3) -> str:
     """Return a formatted space-group string, e.g. ``"Fd-3m (227)"``.
 
