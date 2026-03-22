@@ -39,7 +39,7 @@ def run_processing_loop(
     from rapmat.core.dedup import confirm_duplicates
     from rapmat.core.relaxation import structure_relax
     from rapmat.core.sanity import check_sanity
-    from rapmat.utils.structure import calculate_thickness, format_spg
+    from rapmat.utils.structure import calculate_thickness, format_spg, standardize_atoms
     from rapmat.utils.console import console, err_console
 
     calculator_name = config.get("calculator", "MATTERSIM").upper()
@@ -195,6 +195,9 @@ def run_processing_loop(
                     relaxed_structure.info["initial_spg"] = structure.info[
                         "initial_spg"
                     ]
+                    
+                    relaxed_structure = standardize_atoms(relaxed_structure, symprec=symprec)
+                    
                     relaxed_structure.info["final_spg"] = format_spg(
                         relaxed_structure, symprec=symprec
                     )
