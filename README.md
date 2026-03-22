@@ -1,3 +1,14 @@
+# rapmat
+
+Rapid materials discovery using machine learning interatomic potentials (MLIPs) and random crystal structure generation - all from a terminal UI.
+
+## Features
+
+- **Random crystal structure search** - generate candidate structures with [PyXTal](https://github.com/qzhu2017/PyXtal) and relax them with ML potentials
+- **Multiple MLIP backends** - MatterSim, NequIP out of the box, more coming soon
+- **Phonon analysis** - evaluate dynamical stability and thermal properties via Phonopy
+- **Terminal UI** - manage studies and runs, launch calculations, and browse results without leaving the terminal
+
 ## Installation
 
 Install `pytorch<2.10.0` with CUDA support if you have an NVIDIA GPU; otherwise skip this step:
