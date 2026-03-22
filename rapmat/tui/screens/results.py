@@ -646,6 +646,7 @@ class ResultsScreen:
         from rapmat.tui.widgets.dropdown import DropdownSelect
         from rapmat.tui.widgets.form import (
             FormGroup,
+            checkbox_field,
             dropdown_field,
             float_field,
             int_field,
@@ -665,6 +666,7 @@ class ResultsScreen:
                 tuple_field("mesh", "Q-point mesh", size=3, default=(20, 20, 20)),
                 float_field("displacement", "Displacement", default=0.01),
                 float_field("cutoff", "Imag freq cutoff", default=-0.15),
+                checkbox_field("reduce_prim", "Reduce to primitive", default=True),
             ],
             label_width=18,
         )
@@ -739,6 +741,7 @@ class ResultsScreen:
         mesh = vals.get("mesh", (20, 20, 20))
         displacement = float(vals.get("displacement", 0.01))
         cutoff = float(vals.get("cutoff", -0.15))
+        reduce_prim = bool(vals.get("reduce_prim", True))
 
         try:
             calc_enum = Calculators(calc_name)
@@ -786,6 +789,7 @@ class ResultsScreen:
                 store=store,
                 progress_callback=_cb,
                 symprec=config.get("symprec", 1e-3) if config else 1e-3,
+                reduce_primitive=reduce_prim,
             )
 
         def _on_progress(current: int, total: int, message: str) -> None:
