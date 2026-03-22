@@ -422,10 +422,8 @@ def run_generation_loop(
             progress_callback(
                 counter,
                 n_placeholders,
-                f"Generating {counter}/{n_placeholders}  gen={generated} disc={discarded}",
+                f"Generating {counter}/{n_placeholders}",
             )
-        else:
-            progress.update(task, advance=1, status=f"gen={generated} disc={discarded}")
 
     def _handle_result(status, struct_id, atoms, vec, spg, fu):
         nonlocal generated, discarded, errors
