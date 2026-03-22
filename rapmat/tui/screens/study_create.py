@@ -88,7 +88,7 @@ class StudyCreateScreen:
                 # Sanity section
                 float_field("min_dist", "Min distance (Å)", default=0.5),
                 checkbox_field("sanity_pymatgen", "Sanity pymatgen", default=False),
-                float_field("symprec", "Symmetry precision", default=1e-3),
+                float_field("symprec", "Symmetry precision", default=1e-5),
             ],
             label_width=22,
         )

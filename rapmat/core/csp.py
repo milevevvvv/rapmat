@@ -50,7 +50,7 @@ def run_processing_loop(
     thickness_cutoff = config.get("thickness_cutoff", None)
     use_dedup = config.get("dedup", False)
     dedup_threshold = config.get("dedup_threshold", 1e-2)
-    symprec = config.get("symprec", 1e-3)
+    symprec = config.get("symprec", 1e-5)
     pressure_gpa = config.get("pressure_gpa", 0.0)
     pressure_evA3 = pressure_gpa * _GPa
     use_pymatgen_dedup = config.get("pymatgen_dedup", False)
