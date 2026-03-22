@@ -32,6 +32,7 @@ def compute_dynamical_stability_for_results(
     calculator_config: dict | None = None,
     progress_callback: Callable[[int, int, str], None] | None = None,
     symprec: float = 1e-3,
+    reduce_primitive: bool = True,
 ) -> bool:
     """Compute phonon dynamical stability for the top N converged structures.
     """
@@ -67,10 +68,10 @@ def compute_dynamical_stability_for_results(
             result["dynamical_stability"] = None
             return
 
-        from rapmat.utils.structure import standardize_atoms
-        
         atoms = structures[structure_index]
-        atoms = standardize_atoms(atoms, to_primitive=True, symprec=symprec)
+        if reduce_primitive:
+            from rapmat.utils.structure import standardize_atoms
+            atoms = standardize_atoms(atoms, to_primitive=True, symprec=symprec)
         atoms.calc = calculator
 
         try:
