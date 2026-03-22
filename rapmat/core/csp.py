@@ -196,8 +196,6 @@ def run_processing_loop(
                         "initial_spg"
                     ]
                     
-                    relaxed_structure = standardize_atoms(relaxed_structure, symprec=symprec)
-                    
                     relaxed_structure.info["final_spg"] = format_spg(
                         relaxed_structure, symprec=symprec
                     )
