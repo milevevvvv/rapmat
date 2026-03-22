@@ -96,12 +96,14 @@ class _SaveDialog(urwid.WidgetWrap):
         cif_rb = urwid.RadioButton(self._fmt_group, "cif")
         xyz_rb = urwid.RadioButton(self._fmt_group, "xyz")
         self._dir_edit = urwid.Edit(caption="Directory: ", edit_text=str(Path.cwd()))
+        self._standardize_cb = urwid.CheckBox("Standardize cell", state=True)
 
         def _ok(_btn: urwid.Button) -> None:
             fmt = next((rb.label for rb in self._fmt_group if rb.state), "cif")
             directory = self._dir_edit.edit_text.strip() or str(Path.cwd())
+            standardize = self._standardize_cb.state
             self._emit("close", True)
-            on_save(fmt, directory)
+            on_save(fmt, directory, standardize)
 
         def _cancel(_btn: urwid.Button) -> None:
             self._emit("close", False)
@@ -120,6 +122,8 @@ class _SaveDialog(urwid.WidgetWrap):
                 xyz_rb,
                 urwid.Divider(),
                 self._dir_edit,
+                urwid.Divider(),
+                self._standardize_cb,
                 urwid.Divider(),
                 urwid.Columns(
                     [("weight", 1, ok_btn), ("weight", 1, cancel_btn)],
@@ -559,9 +563,9 @@ class ResultsScreen:
 
         current_body = self._main_frame.body
 
-        def _on_save(fmt: str, directory: str) -> None:
+        def _on_save(fmt: str, directory: str, standardize: bool) -> None:
             self._main_frame.body = current_body  # type: ignore[union-attr]
-            self._do_save(result, idx, fmt, directory)
+            self._do_save(result, idx, fmt, directory, standardize)
 
         def _on_cancel() -> None:
             self._main_frame.body = current_body  # type: ignore[union-attr]
@@ -572,8 +576,12 @@ class ResultsScreen:
         )
         self._main_frame.body = save_dlg
 
-    def _do_save(self, result: dict, idx: int, fmt: str, directory: str) -> None:
+    def _do_save(self, result: dict, idx: int, fmt: str, directory: str, standardize: bool = True) -> None:
+        from rapmat.utils.structure import standardize_atoms
+
         atoms = self._structures[idx]
+        if standardize:
+            atoms = standardize_atoms(atoms)
         out_dir = Path(directory)
         out_dir.mkdir(parents=True, exist_ok=True)
         ident = str(result.get("id", idx + 1)).replace("/", "_")
