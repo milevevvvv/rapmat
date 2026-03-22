@@ -43,7 +43,7 @@ class StudyDetailScreen:
     @property
     def breadcrumb_title(self) -> str:
         study = self._state.active_study
-        return f"Study: {study}" if study else self.title
+        return f"{study}" if study else self.title
 
     def __init__(self, state: "AppState", router: "ScreenRouter") -> None:
         self._state = state
