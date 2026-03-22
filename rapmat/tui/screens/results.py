@@ -761,6 +761,8 @@ class ResultsScreen:
         phonon_cutoff = (
             self._phonon_cutoff if self._phonon_cutoff is not None else cutoff
         )
+        meta = store.get_run_metadata(self._run_name)
+        config = meta.get("config", {}) if meta else {}
 
         def _worker(progress) -> None:
             def _cb(
@@ -783,6 +785,7 @@ class ResultsScreen:
                 phonon_calculator=calc_enum,
                 store=store,
                 progress_callback=_cb,
+                symprec=config.get("symprec", 1e-3) if config else 1e-3,
             )
 
         def _on_progress(current: int, total: int, message: str) -> None:

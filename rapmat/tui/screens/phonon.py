@@ -234,23 +234,11 @@ class PhononDispersionScreen:
             if reduce_prim:
                 progress.update(2, 5, "Reducing to primitive cell")
                 progress.log("Reducing to primitive cell...")
-                import spglib
-
-                cell = (
-                    structure.get_cell(),
-                    structure.get_scaled_positions(),
-                    structure.get_atomic_numbers(),
-                )
+                from rapmat.utils.structure import standardize_atoms
+                calc = structure.calc
                 try:
-                    primitive_cell = spglib.find_primitive(cell, symprec=1e-3)
-                    lattice, positions, numbers = primitive_cell
-                    structure = Atoms(
-                        numbers=numbers,
-                        scaled_positions=positions,
-                        cell=lattice,
-                        pbc=structure.pbc,
-                        calculator=structure.calc,
-                    )
+                    structure = standardize_atoms(structure, to_primitive=True)
+                    structure.calc = calc
                 except Exception as e:
                     progress.log(f"WARNING: Could not reduce cell: {e}")
 
