@@ -5,7 +5,14 @@ import numpy as np
 import spglib
 from ase import Atoms
 
-spglib.OLD_ERROR_HANDLING = False
+
+def _spglib_cell(atoms: Atoms) -> tuple:
+    """Build the (lattice, positions, numbers) tuple spglib expects."""
+    return (
+        atoms.get_cell().array,
+        atoms.get_scaled_positions(wrap=False),
+        atoms.get_atomic_numbers(),
+    )
 
 
 def calculate_thickness(atoms: Atoms, axis: int = 2) -> float:
