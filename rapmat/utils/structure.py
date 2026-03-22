@@ -1,3 +1,4 @@
+import warnings
 from typing import Optional, Tuple
 
 import numpy as np
@@ -49,14 +50,12 @@ def calculate_thickness(atoms: Atoms, axis: int = 2) -> float:
 
 
 def get_spacegroup_info(atoms: Atoms, symprec: float = 1e-3) -> Tuple[str, int]:
-    cell = (
-        atoms.get_cell().array,
-        atoms.get_scaled_positions(wrap=False),
-        atoms.get_atomic_numbers(),
-    )
+    cell = _spglib_cell(atoms)
 
     try:
-        dataset = spglib.get_symmetry_dataset(cell, symprec=symprec)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            dataset = spglib.get_symmetry_dataset(cell, symprec=symprec)
     except Exception as e:
         raise RuntimeError(f"Spglib failed to generate a dataset: {e}") from e
 
@@ -76,17 +75,15 @@ def standardize_atoms(
     If spglib cannot standardize the cell, returns a copy of the original atoms object.
     Preserves the `info` dictionary attached to the atoms.
     """
-    cell = (
-        atoms.get_cell().array,
-        atoms.get_scaled_positions(wrap=False),
-        atoms.get_atomic_numbers(),
-    )
-    result = spglib.standardize_cell(
-        cell, 
-        to_primitive=to_primitive, 
-        no_idealize=no_idealize, 
-        symprec=symprec
-    )
+    cell = _spglib_cell(atoms)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        result = spglib.standardize_cell(
+            cell, 
+            to_primitive=to_primitive, 
+            no_idealize=no_idealize, 
+            symprec=symprec
+        )
     if result is None:
         return atoms.copy()
         
