@@ -96,7 +96,7 @@ class _SaveDialog(urwid.WidgetWrap):
         cif_rb = urwid.RadioButton(self._fmt_group, "cif")
         xyz_rb = urwid.RadioButton(self._fmt_group, "xyz")
         self._dir_edit = urwid.Edit(caption="Directory: ", edit_text=str(Path.cwd()))
-        self._standardize_cb = urwid.CheckBox("Standardize cell", state=True)
+        self._standardize_cb = urwid.CheckBox("Standardize cell", state=False)
 
         def _ok(_btn: urwid.Button) -> None:
             fmt = next((rb.label for rb in self._fmt_group if rb.state), "cif")
