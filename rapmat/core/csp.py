@@ -47,7 +47,6 @@ def run_processing_loop(
     domain_val = config.get("domain", "bulk")
     search_dim = 3 if domain_val == "bulk" else 2
     skip_not_converged = config.get("skip_not_converged", False)
-    thickness_cutoff = config.get("thickness_cutoff", None)
     use_dedup = config.get("dedup", False)
     dedup_threshold = config.get("dedup_threshold", 1e-2)
     symprec = config.get("symprec", 1e-5)
@@ -85,7 +84,6 @@ def run_processing_loop(
         )
 
     counter: int = 0
-    discarded_thick = 0
     discarded_conv = 0
     discarded_sanity = 0
     discarded_unstable = 0
@@ -98,7 +96,7 @@ def run_processing_loop(
             progress_callback(counter, n_candidates, msg)
 
     def _run_loop():
-        nonlocal counter, discarded_thick, discarded_conv, discarded_sanity
+        nonlocal counter, discarded_conv, discarded_sanity
         nonlocal discarded_unstable, discarded_dup, discarded_candidate_dup
         nonlocal calculator
 
@@ -251,22 +249,6 @@ def run_processing_loop(
                         relaxed_structure.info["thickness"] = current_thickness
                         meta["thickness"] = current_thickness
 
-                        if (
-                            thickness_cutoff is not None
-                            and current_thickness > thickness_cutoff
-                        ):
-                            discarded_thick += 1
-                            _report(
-                                f"Discarded {struct_id}: thickness {current_thickness:.2f} > {thickness_cutoff:.2f}"
-                            )
-                            store.update_structure(
-                                struct_id,
-                                status="discarded",
-                                atoms=relaxed_structure,
-                                metadata=meta,
-                            )
-                            break
-
                     if use_dedup:
                         _report("Computing relaxed vector...")
                         vec = descriptor.compute(relaxed_structure)
@@ -358,7 +340,6 @@ def run_processing_loop(
         f"{discarded_candidate_dup} cand-dup",
         f"{discarded_conv} conv",
         f"{discarded_sanity} sanity",
-        f"{discarded_thick} thick",
         f"{discarded_unstable} unstable",
         f"{discarded_dup} dup",
     ]
@@ -448,7 +429,7 @@ def run_generation_loop(
             spg = ph["gen_spg"]
             fu = ph["gen_fu"]
             status, struct_id, atoms, vec = _generate_one_structure(
-                ph["id"], spg, fu, elements, formula_values, search_dim, thickness_cutoff
+                ph["id"], spg, fu, elements, formula_values, search_dim, None
             )
             _handle_result(status, struct_id, atoms, vec, spg, fu)
             _advance(counter)
@@ -480,7 +461,7 @@ def run_generation_loop(
                     elements,
                     formula_values,
                     search_dim,
-                    thickness_cutoff,
+                    None,
                 ): ph
                 for ph in placeholders
             }

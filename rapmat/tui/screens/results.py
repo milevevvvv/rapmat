@@ -242,7 +242,6 @@ class ResultsScreen:
         meta = store.get_run_metadata(run_name)
         config = meta.get("config", {}) if meta else {}
         self._pressure_gpa = float(config.get("pressure_gpa", 0.0))
-        self._thickness_cutoff = config.get("thickness_cutoff")
         self._phonon_cutoff = config.get("phonon_cutoff")
 
         records = store.get_run_structures(run_name, status="relaxed")
@@ -534,16 +533,106 @@ class ResultsScreen:
             "Hiding unconverged." if self._hide_unconverged else "Showing unconverged."
         )
 
-    def _action_toggle_thickness(self) -> None:
-        if self._thickness_cutoff is None:
-            self._show_message("No thickness cutoff configured for this run.")
+    def _action_thickness(self) -> None:
+        """Show thickness filter dialog, then apply dynamic filter."""
+        if self._main_frame is None:
             return
-        self._hide_thick = not self._hide_thick
-        self._rebuild_table()
-        if self._hide_thick:
-            self._show_message(f"Hiding thickness > {self._thickness_cutoff:.2f} Å.")
-        else:
+        if not self._show_thickness:
+            self._show_message("No thickness data available for this run.")
+            return
+
+        from rapmat.tui.widgets.form import FormGroup, float_field
+
+        default_val = self._thickness_cutoff if self._thickness_cutoff is not None else 0.0
+        form = FormGroup(
+            fields=[
+                float_field("cutoff", "Max thickness (Å)", default=default_val),
+            ],
+            label_width=18,
+        )
+
+        current_body = self._main_frame.body
+
+        def _on_apply(_btn) -> None:
+            errors = form.validate()
+            if errors:
+                err_text.set_text(("form_error", "; ".join(errors)))
+                return
+            vals = form.get_values()
+            cutoff = float(vals.get("cutoff", 0.0))
+            self._main_frame.body = current_body  # type: ignore[union-attr]
+            if cutoff > 0:
+                self._thickness_cutoff = cutoff
+                self._hide_thick = True
+                self._rebuild_table()
+                self._show_message(f"Hiding thickness > {cutoff:.2f} Å.")
+            else:
+                self._thickness_cutoff = None
+                self._hide_thick = False
+                self._rebuild_table()
+                self._show_message("Showing all thicknesses.")
+
+        def _on_cancel(_btn) -> None:
+            self._main_frame.body = current_body  # type: ignore[union-attr]
+
+        def _on_clear(_btn) -> None:
+            self._main_frame.body = current_body  # type: ignore[union-attr]
+            self._thickness_cutoff = None
+            self._hide_thick = False
+            self._rebuild_table()
             self._show_message("Showing all thicknesses.")
+
+        err_text = urwid.Text("")
+        apply_btn = urwid.AttrMap(
+            urwid.Button("Apply", on_press=_on_apply),
+            None,
+            focus_map="btn_focus",
+        )
+        clear_btn = urwid.AttrMap(
+            urwid.Button("Clear", on_press=_on_clear),
+            None,
+            focus_map="btn_focus",
+        )
+        cancel_btn = urwid.AttrMap(
+            urwid.Button("Cancel", on_press=_on_cancel),
+            None,
+            focus_map="btn_focus",
+        )
+        btn_row = urwid.Columns(
+            [
+                ("weight", 1, apply_btn),
+                ("weight", 1, clear_btn),
+                ("weight", 1, cancel_btn),
+            ],
+            dividechars=2,
+        )
+
+        dialog_body = urwid.Pile(
+            [
+                ("pack", urwid.Text(("section", " Thickness Filter"), align="left")),
+                ("pack", urwid.Divider("─")),
+                ("pack", form),
+                ("pack", urwid.Divider()),
+                ("pack", err_text),
+                ("pack", urwid.Divider()),
+                ("pack", btn_row),
+            ]
+        )
+
+        inner = urwid.LineBox(
+            urwid.Padding(dialog_body, left=1, right=1),
+            title="Thickness Filter",
+        )
+        overlay = urwid.Overlay(
+            urwid.AttrMap(inner, "dialog"),
+            current_body,
+            align=urwid.CENTER,
+            width=(urwid.RELATIVE, 50),
+            valign=urwid.MIDDLE,
+            height=urwid.PACK,
+            min_width=40,
+        )
+        self._main_frame.body = overlay
 
     def _action_save(self) -> None:
         if self._table is None or self._main_frame is None:
@@ -614,7 +703,7 @@ class ResultsScreen:
             self._action_toggle_unconverged()
             return None
         if key in ("t", "T"):
-            self._action_toggle_thickness()
+            self._action_thickness()
             return None
         if key in ("s", "S"):
             self._action_save()
