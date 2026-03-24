@@ -75,7 +75,6 @@ class StudyCreateScreen:
                     default="",
                 ),
                 float_field("pressure", "Pressure (GPa)", default=0.0),
-                float_field("thickness", "Thickness cutoff", default=0.0),
                 # Convergence section
                 float_field("force_conv_crit", "Force conv. crit", default=5e-2),
                 int_field("steps_max", "Max steps", default=500),
@@ -211,7 +210,6 @@ class StudyCreateScreen:
                 config={
                     "calculator_config": calc_config_dict,
                     "pressure_gpa": vals["pressure"],
-                    "thickness_cutoff": vals["thickness"] if domain == "monolayer" else None,
                     "force_conv_crit": vals["force_conv_crit"],
                     "steps_max": vals["steps_max"],
                     "dedup": vals["dedup"],
