@@ -191,6 +191,10 @@ class EvalScreen:
         from rapmat.core.evaluation import run_eval_loop
         from rapmat.utils.common import workdir_context
 
+        class _TaskCalcCallback:
+            def on_status(self, message: str) -> None:
+                progress.log(message)
+
         store = self._state.store
         run_name = vals["run_name"]
         calculator_name = vals["calculator"]
@@ -225,6 +229,7 @@ class EvalScreen:
                     Calculators(calculator_name),
                     wdir,
                     config={},
+                    callback=_TaskCalcCallback(),
                 )
 
                 def _cb(current, total, msg, is_log=True):

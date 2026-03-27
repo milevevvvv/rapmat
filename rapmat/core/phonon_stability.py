@@ -7,7 +7,7 @@ from typing import Callable, List, Optional, Tuple
 
 from ase import Atoms
 
-from rapmat.calculators import Calculators
+from rapmat.calculators import CalculatorCallback, Calculators
 from rapmat.calculators.factory import load_calculator
 from rapmat.core.phonon import (
     get_mesh_min_frequency,
@@ -51,7 +51,15 @@ def compute_dynamical_stability_for_results(
     if not target_results:
         return False
 
-    calculator = load_calculator(phonon_calculator, config=calculator_config)
+    class _ProgressCalcCallback:
+        def on_status(self, message: str) -> None:
+            if progress_callback:
+                progress_callback(0, 0, message)
+
+    calculator = load_calculator(
+        phonon_calculator, config=calculator_config,
+        callback=_ProgressCalcCallback(),
+    )
     updated = False
     total = len(target_results)
 

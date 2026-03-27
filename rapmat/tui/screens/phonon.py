@@ -177,6 +177,11 @@ class PhononDispersionScreen:
         )
         from rapmat.utils.common import workdir_context
 
+        class _TaskCalcCallback:
+            def on_status(self, message: str) -> None:
+                progress.log(message)
+                progress.update(1, 5, message)
+
         structure_file = vals["structure_file"].strip()
         calculator_name = vals["calculator"]
         supercell = vals["supercell"]
@@ -197,7 +202,10 @@ class PhononDispersionScreen:
         with workdir_context(None) as wdir:
             progress.update(1, 5, "Loading calculator")
             progress.log(f"Loading calculator {calculator_name}...")
-            calculator = load_calculator(Calculators(calculator_name), wdir, config={})
+            calculator = load_calculator(
+                Calculators(calculator_name), wdir, config={},
+                callback=_TaskCalcCallback(),
+            )
             structure.calc = calculator
 
             if prerelax:

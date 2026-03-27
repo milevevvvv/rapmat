@@ -1,18 +1,27 @@
 from pathlib import Path
 
-from rapmat.calculators import Calculators, get_install_hint, is_calculator_available
+from rapmat.calculators import (
+    CalculatorCallback,
+    Calculators,
+    get_install_hint,
+    is_calculator_available,
+)
 
 
 def load_calculator(
     calculator_name: Calculators,
     output_dir_path: Path | None = None,
     config: dict | None = None,
+    callback: CalculatorCallback | None = None,
 ):
     """Instantiate an ASE calculator by name.
 
     *config* is an optional dict of calculator-specific settings
     (e.g. VASP INCAR parameters resolved from a TOML file).
     It is only used by calculators that accept arbitrary keyword config.
+
+    *callback* is an optional :class:`CalculatorCallback` used to report
+    installation / download progress to the caller (e.g. TUI log view).
     """
     try:
         match calculator_name.value:
@@ -23,11 +32,11 @@ def load_calculator(
             case Calculators.NEQUIP_OAML.value:
                 from rapmat.calculators.nequip import build_calculator_nequip_oaml
 
-                return build_calculator_nequip_oaml()
+                return build_calculator_nequip_oaml(callback=callback)
             case Calculators.UPET.value:
                 from rapmat.calculators.upet import build_calculator_upet
 
-                return build_calculator_upet(config)
+                return build_calculator_upet(config, callback=callback)
             case Calculators.VASP.value:
                 from rapmat.calculators.vasp import build_calculator_vasp
 
@@ -47,5 +56,5 @@ def load_calculator(
         raise ImportError(msg) from ie
     except RuntimeError as re:
         raise RuntimeError(
-            f"An error occurred while attempting to initialize {calculator_name.value} calculator."
+            f"Failed to initialize {calculator_name.value}: {re}"
         ) from re
