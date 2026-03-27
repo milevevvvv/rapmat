@@ -1,16 +1,19 @@
 import subprocess
 import sys
 import warnings
+from functools import partial
 from pathlib import Path
-from time import sleep
+
+from rapmat.calculators import CalculatorCallback, ensure_asset
 
 
-def build_calculator_nequip_oaml():
+def build_calculator_nequip_oaml(
+    callback: CalculatorCallback | None = None,
+):
     import torch
     import torch._inductor.codecache
     from nequip.ase import NequIPCalculator
     from rapmat.config import APP_DATA_DIR
-    from rapmat.utils.console import console
 
     app_dir = APP_DATA_DIR.resolve()
     app_dir.mkdir(parents=True, exist_ok=True)
@@ -24,13 +27,9 @@ def build_calculator_nequip_oaml():
             "Windows is not supported for nequip due to triton lacking windows support."
         )
 
-    if not checkpoint.exists():
-        with console.status(
-            f"Nequip-OAM-L checkpoint not found at {checkpoint}, trying to install for {device}..."
-        ):
-            sleep(3)
-
-            command = [
+    def _install() -> subprocess.CompletedProcess:
+        return subprocess.run(
+            [
                 "nequip-compile",
                 "nequip.net:mir-group/NequIP-OAM-L:0.1",
                 str(checkpoint),
@@ -40,24 +39,17 @@ def build_calculator_nequip_oaml():
                 device,
                 "--target",
                 "ase",
-            ]
+            ],
+            capture_output=True,
+            check=False,
+        )
 
-            try:
-                result = subprocess.run(command, capture_output=True, check=False)
-            except Exception as e:
-                raise RuntimeError(f"Failed to install the checkpoint: {e}") from e
-
-            if result.returncode == 0:
-                if not checkpoint.exists():
-                    raise RuntimeError(
-                        f"Tried to install, but {checkpoint} still does not exist."
-                    )
-
-                console.print("[green]Install ok")
-            else:
-                raise RuntimeError(
-                    f"Failed to install the checkpoint (code {result.returncode}):\n{result.stderr.decode() if result.stderr is not None else ''}"
-                )
+    ensure_asset(
+        name="NequIP-OAM-L checkpoint",
+        path=checkpoint,
+        install_fn=_install,
+        callback=callback,
+    )
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")

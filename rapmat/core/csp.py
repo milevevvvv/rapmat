@@ -35,12 +35,20 @@ def run_processing_loop(
     import torch
     from ase.units import GPa as _GPa
     from rapmat.calculators.factory import load_calculator
-    from rapmat.calculators import Calculators
+    from rapmat.calculators import CalculatorCallback, Calculators
     from rapmat.core.dedup import confirm_duplicates
     from rapmat.core.relaxation import structure_relax
     from rapmat.core.sanity import check_sanity
     from rapmat.utils.structure import calculate_thickness, format_spg, standardize_atoms
     from rapmat.utils.console import console, err_console
+
+    class _ProgressCalcCallback:
+        """Adapter: forwards calculator status to the TUI progress callback."""
+        def on_status(self, message: str) -> None:
+            if progress_callback:
+                progress_callback(0, 0, message)
+
+    _calc_cb = _ProgressCalcCallback()
 
     calculator_name = config.get("calculator", "MATTERSIM").upper()
     calculator_config = config.get("calculator_config", {})
@@ -78,10 +86,11 @@ def run_processing_loop(
     except Exception:
         pass
 
-    with console.status(f"Loading calculator {calculator_name}..."):
-        calculator = load_calculator(
-            Calculators(calculator_name), config=calculator_config
-        )
+    _calc_cb.on_status(f"Loading calculator {calculator_name}...")
+    calculator = load_calculator(
+        Calculators(calculator_name), config=calculator_config,
+        callback=_calc_cb,
+    )
 
     counter: int = 0
     discarded_conv = 0
@@ -321,7 +330,8 @@ def run_processing_loop(
                     _report(f"Reloading calculator {calculator_name} after error...")
                     try:
                         calculator = load_calculator(
-                            Calculators(calculator_name), config=calculator_config
+                            Calculators(calculator_name), config=calculator_config,
+                            callback=_calc_cb,
                         )
                     except Exception as reload_ex:
                         err_console.print(f"[red]Calculator reload failed: {reload_ex}[/red]")
@@ -329,9 +339,10 @@ def run_processing_loop(
                         store.update_structure(struct_id, status="error")
                         break # Give up on this structure if reload fails
 
-            progress_callback(
+            if progress_callback:
+                progress_callback(
                     counter, n_candidates, f"Processed {counter}/{n_candidates}"
-            )
+                )
 
     _run_loop()
 
