@@ -757,6 +757,9 @@ class ResultsScreen:
             fields=[
                 int_field("top_n", "Top N structures", default=5),
                 dropdown_field(
+                    "apply_to", "Apply to", options=["Filtered view", "All converged"], default=0
+                ),
+                dropdown_field(
                     "calculator", "Calculator", options=calc_options, default=0
                 ),
                 tuple_field("supercell", "Supercell", size=3, default=(3, 3, 3)),
@@ -855,7 +858,11 @@ class ResultsScreen:
             self._body_pile.options("pack"),
         )
 
-        results_snapshot = list(self._results)
+        apply_to = vals.get("apply_to", "Filtered view")
+        if apply_to == "Filtered view":
+            results_snapshot = list(self._get_display_results())
+        else:
+            results_snapshot = list(self._results)
         structures_snapshot = list(self._structures)
         store = self._state.store
         phonon_cutoff = (
