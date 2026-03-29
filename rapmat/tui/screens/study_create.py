@@ -47,7 +47,7 @@ class StudyCreateScreen:
             fields=[
                 text_field(
                     key="system",
-                    label="System",
+                    label="System (e.g., Al-O)",
                     default="",
                     validator=lambda v: "Required" if not v.strip() else None,
                 ),
