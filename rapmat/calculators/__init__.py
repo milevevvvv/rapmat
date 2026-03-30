@@ -73,6 +73,7 @@ def ensure_asset(
     path: Path,
     install_fn: Callable[[], subprocess.CompletedProcess],
     callback: CalculatorCallback | None = None,
+    log_path: Path | None = None,
 ) -> None:
     """Download / compile an asset if it is missing.
 
@@ -106,8 +107,10 @@ def ensure_asset(
 
     if result.returncode != 0:
         stderr = result.stderr.decode() if result.stderr else ""
+        log_msg = f"\nSee log file for details: {log_path}" if log_path else ""
+        err_msg = stderr or "No stderr output available."
         raise RuntimeError(
-            f"Failed to install {name} (exit code {result.returncode}):\n{stderr}"
+            f"Failed to install {name} (exit code {result.returncode}):\n{err_msg}{log_msg}"
         )
 
     if not path.exists():
