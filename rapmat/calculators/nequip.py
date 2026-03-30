@@ -27,28 +27,33 @@ def build_calculator_nequip_oaml(
             "Windows is not supported for nequip due to triton lacking windows support."
         )
 
+    log_path = app_dir / "nequip_install.log"
+
     def _install() -> subprocess.CompletedProcess:
-        return subprocess.run(
-            [
-                "nequip-compile",
-                "nequip.net:mir-group/NequIP-OAM-L:0.1",
-                str(checkpoint),
-                "--mode",
-                "aotinductor",
-                "--device",
-                device,
-                "--target",
-                "ase",
-            ],
-            capture_output=True,
-            check=False,
-        )
+        with open(log_path, "w") as log_file:
+            return subprocess.run(
+                [
+                    "nequip-compile",
+                    "nequip.net:mir-group/NequIP-OAM-L:0.1",
+                    str(checkpoint),
+                    "--mode",
+                    "aotinductor",
+                    "--device",
+                    device,
+                    "--target",
+                    "ase",
+                ],
+                stdout=log_file,
+                stderr=subprocess.STDOUT,
+                check=False,
+            )
 
     ensure_asset(
         name="NequIP-OAM-L checkpoint",
         path=checkpoint,
         install_fn=_install,
         callback=callback,
+        log_path=log_path,
     )
 
     with warnings.catch_warnings():
