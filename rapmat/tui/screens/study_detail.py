@@ -120,7 +120,8 @@ class StudyDetailScreen:
         for run in sorted(runs, key=lambda r: r.get("timestamp", "")):
             counts = self._state.store.count_by_status(run["name"])
             relaxed = counts.get("relaxed", 0)
-            total = sum(counts.values())
+            generated = counts.get("generated", 0)
+            total = relaxed + generated
             run_type = _classify_run(run, elements)
             
             # Status display
