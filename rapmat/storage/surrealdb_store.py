@@ -63,6 +63,7 @@ DEFINE FIELD IF NOT EXISTS thickness        ON structure TYPE option<float>;
 DEFINE FIELD IF NOT EXISTS enthalpy_per_atom ON structure TYPE option<float>;
 DEFINE FIELD IF NOT EXISTS volume            ON structure TYPE option<float>;
 DEFINE FIELD IF NOT EXISTS min_phonon_freq   ON structure TYPE option<float>;
+DEFINE FIELD IF NOT EXISTS duplicate          ON structure TYPE option<bool>;
 DEFINE FIELD IF NOT EXISTS initial_atoms_json ON structure TYPE string;
 DEFINE FIELD IF NOT EXISTS final_atoms_json   ON structure TYPE string;
 DEFINE FIELD IF NOT EXISTS timestamp        ON structure TYPE string;
@@ -801,6 +802,39 @@ class SurrealDBStore(StructureStore):
             {"ts": datetime.now().isoformat()},
         )
 
+    def mark_duplicates(
+        self,
+        dropped_ids: list[str],
+        kept_ids: list[str],
+    ) -> None:
+        """Persist dedup analysis results by setting the ``duplicate`` field.
+
+        Parameters
+        ----------
+        dropped_ids
+            Structure ids to mark as ``duplicate = true``.
+        kept_ids
+            Structure ids to mark as ``duplicate = false``.
+        """
+        ts = datetime.now().isoformat()
+        BATCH = 500
+        for i in range(0, len(dropped_ids), BATCH):
+            batch = dropped_ids[i : i + BATCH]
+            id_list = ", ".join(_record_id("structure", sid) for sid in batch)
+            self._db.query(
+                f"UPDATE structure SET duplicate = true, timestamp = $ts "
+                f"WHERE id IN [{id_list}]",
+                {"ts": ts},
+            )
+        for i in range(0, len(kept_ids), BATCH):
+            batch = kept_ids[i : i + BATCH]
+            id_list = ", ".join(_record_id("structure", sid) for sid in batch)
+            self._db.query(
+                f"UPDATE structure SET duplicate = false, timestamp = $ts "
+                f"WHERE id IN [{id_list}]",
+                {"ts": ts},
+            )
+
     # ------------------------------------------------------------------ #
     #  Vector search / deduplication
     # ------------------------------------------------------------------ #
@@ -1200,6 +1234,7 @@ class SurrealDBStore(StructureStore):
                     "converged": row["converged"],
                     "thickness": row.get("thickness"),
                     "min_phonon_freq": row.get("min_phonon_freq"),
+                    "duplicate": row.get("duplicate"),
                     "initial_atoms": initial_atoms,
                     "final_atoms": final_atoms,
                     "atoms": final_atoms if final_atoms is not None else initial_atoms,

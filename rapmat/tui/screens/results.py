@@ -35,6 +35,8 @@ def _dyn_stability(result: dict, phonon_cutoff: float | None) -> Optional[bool]:
 def _row_attr(result: dict, phonon_cutoff: float | None) -> str:
     if not result.get("converged"):
         return "unconv"
+    if result.get("duplicate") is True:
+        return "unconv"
     dyn = _dyn_stability(result, phonon_cutoff)
     if dyn is False:
         return "error"
@@ -181,9 +183,11 @@ class ResultsScreen:
         self._structures: list[Atoms] = []
         self._hide_unconverged: bool = True
         self._hide_thick: bool = False
+        self._hide_duplicates: bool = False
         self._search_query: str = ""
         self._show_thickness: bool = False
         self._show_dynamical_stability: bool = False
+        self._show_duplicate_col: bool = False
         self._app_message: str = ""
 
         # Urwid widgets (set in build)
@@ -218,6 +222,7 @@ class ResultsScreen:
         keys = [
             ("u", "Unconverged"),
             ("t", "Thickness"),
+            ("d", "Duplicates"),
             ("/", "Search"),
             ("s", "Save"),
             ("p", "Phonons"),
@@ -273,6 +278,7 @@ class ResultsScreen:
                 "converged": rec["converged"],
                 "thickness": rec.get("thickness") or None,
                 "min_phonon_freq": rec.get("min_phonon_freq"),
+                "duplicate": rec.get("duplicate"),
             }
             if self._pressure_gpa > 0:
                 entry["enthalpy_per_atom"] = rec.get("enthalpy_per_atom")
@@ -289,6 +295,9 @@ class ResultsScreen:
         self._show_dynamical_stability = any(
             r.get("min_phonon_freq") is not None or "dynamical_stability" in r
             for r in self._results
+        )
+        self._show_duplicate_col = any(
+            r.get("duplicate") is not None for r in self._results
         )
 
     # ------------------------------------------------------------------ #
@@ -310,6 +319,8 @@ class ResultsScreen:
             cols.append(("Thick(A)", 9))
         if self._show_dynamical_stability:
             cols.append(("Dyn.stable", 11))
+        if self._show_duplicate_col:
+            cols.append(("Dup", 5))
         cols.append(("Status", 8))
         return cols
 
@@ -331,6 +342,9 @@ class ResultsScreen:
         if self._show_dynamical_stability:
             dyn = _dyn_stability(result, self._phonon_cutoff)
             row.append("Yes" if dyn is True else ("No" if dyn is False else "N/A"))
+        if self._show_duplicate_col:
+            dup = result.get("duplicate")
+            row.append("Yes" if dup is True else ("No" if dup is False else ""))
         row.append("OK" if result.get("converged") else "Unconv")
         return row
 
@@ -395,6 +409,8 @@ class ResultsScreen:
                 if r.get("thickness") is not None
                 and r["thickness"] <= self._thickness_cutoff
             ]
+        if self._hide_duplicates:
+            res = [r for r in res if r.get("duplicate") is not True]
         if self._search_query:
             q = self._search_query
             res = [
@@ -496,6 +512,11 @@ class ResultsScreen:
                             )
                     except (TypeError, ValueError):
                         pass
+                dup = result.get("duplicate")
+                if dup is not None:
+                    markup.append(
+                        ("details", f"Duplicate: {'Yes' if dup else 'No'}\n")
+                    )
             else:
                 markup.append(
                     ("details", "No structure data available for this row.\n")
@@ -531,6 +552,16 @@ class ResultsScreen:
         self._rebuild_table()
         self._show_message(
             "Hiding unconverged." if self._hide_unconverged else "Showing unconverged."
+        )
+
+    def _action_toggle_duplicates(self) -> None:
+        if not self._show_duplicate_col:
+            self._show_message("No dedup data. Run dedup analysis and apply first.")
+            return
+        self._hide_duplicates = not self._hide_duplicates
+        self._rebuild_table()
+        self._show_message(
+            "Hiding duplicates." if self._hide_duplicates else "Showing duplicates."
         )
 
     def _action_thickness(self) -> None:
@@ -704,6 +735,9 @@ class ResultsScreen:
             return None
         if key in ("t", "T"):
             self._action_thickness()
+            return None
+        if key in ("d", "D"):
+            self._action_toggle_duplicates()
             return None
         if key in ("s", "S"):
             self._action_save()

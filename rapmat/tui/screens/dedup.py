@@ -66,6 +66,7 @@ class DedupScreen:
             self._state.status_bar.set_keys(
                 [
                     ("F5", "Analyze"),
+                    ("a", "Apply to DB"),
                     ("p", "Save plot"),
                     ("Esc", "Back"),
                 ]
@@ -446,6 +447,19 @@ class DedupScreen:
                     ]
                 )
 
+        # "Apply to DB" button
+        apply_btn = urwid.AttrMap(
+            urwid.Button("Apply to DB [a]", on_press=lambda _: self._apply_to_db()),
+            "menu_item",
+            focus_map="btn_focus",
+        )
+        widgets.extend(
+            [
+                (urwid.Divider(), ("pack", None)),
+                (urwid.Columns([(22, apply_btn)], dividechars=1), ("pack", None)),
+            ]
+        )
+
         self._results_pile.contents[:] = widgets
 
     def _on_error(self, error: str) -> None:
@@ -475,12 +489,41 @@ class DedupScreen:
             self._progress_panel.add_log(f"Plot error: {e}")
 
     # ------------------------------------------------------------------ #
+    #  Apply dedup results to DB
+    # ------------------------------------------------------------------ #
+
+    def _apply_to_db(self) -> None:
+        """Persist dedup simulation results to the database."""
+        if self._result_data is None:
+            return
+        sim = self._result_data.get("sim")
+        if sim is None:
+            return
+        store = self._state.store
+        try:
+            store.mark_duplicates(sim.dropped_ids, sim.kept_ids)
+            msg = (
+                f"Applied: {len(sim.dropped_ids)} marked duplicate, "
+                f"{len(sim.kept_ids)} marked unique."
+            )
+            self._progress_panel.add_log(msg)
+            if self._state.status_bar:
+                self._state.status_bar.set_message(msg)
+        except Exception as e:
+            self._progress_panel.add_log(f"Apply failed: {e}")
+            if self._state.status_bar:
+                self._state.status_bar.set_message(f"Apply failed: {e}")
+
+    # ------------------------------------------------------------------ #
     #  Key handling
     # ------------------------------------------------------------------ #
 
     def keypress(self, size: tuple, key: str) -> str | None:
         if key == "f5":
             self._on_start()
+            return None
+        if key in ("a", "A"):
+            self._apply_to_db()
             return None
         if key in ("p", "P"):
             self._save_plot()
