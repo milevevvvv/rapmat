@@ -350,9 +350,10 @@ class BaseResultsScreen:
                 if converged is not None:
                     markup.append(("details", f"Converged: {bool(converged)}\n"))
                 
-                t = result.get("thickness")
-                if t is not None:
-                    markup.append(("details", f"Thickness (Å): {t:.2f}\n"))
+                if self._show_thickness:
+                    t = result.get("thickness")
+                    if t is not None:
+                        markup.append(("details", f"Thickness (Å): {t:.2f}\n"))
                 
                 markup.extend(self._get_extra_details(result))
                 

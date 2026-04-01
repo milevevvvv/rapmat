@@ -188,6 +188,13 @@ def build_phase_diagram(
                     "run_name": run["name"],
                     "structure_id": s["id"],
                     "atoms": s["atoms"],
+                    "initial_spg": s.get("initial_spg"),
+                    "final_spg": s.get("final_spg"),
+                    "fmax": s.get("fmax"),
+                    "thickness": s.get("thickness"),
+                    "min_phonon_freq": s.get("min_phonon_freq"),
+                    "duplicate": s.get("duplicate"),
+                    "volume": s.get("volume"),
                 }
             )
 
@@ -249,6 +256,13 @@ def build_energy_ranking(
                     "run_name": run["name"],
                     "structure_id": s["id"],
                     "atoms": s["atoms"],
+                    "initial_spg": s.get("initial_spg"),
+                    "final_spg": s.get("final_spg"),
+                    "fmax": s.get("fmax"),
+                    "thickness": s.get("thickness"),
+                    "min_phonon_freq": s.get("min_phonon_freq"),
+                    "duplicate": s.get("duplicate"),
+                    "volume": s.get("volume"),
                 }
             )
 

@@ -88,7 +88,8 @@ class ResultsScreen(BaseResultsScreen):
         self.title = (
             f"Results: {run_name} {self._pressure_gpa} GPa {len(self._results)} relaxed"
         )
-        self._show_thickness = any(
+        is_bulk = config.get("domain", "bulk") == "bulk"
+        self._show_thickness = (not is_bulk) and any(
             r.get("thickness") is not None for r in self._results
         )
         self._show_dynamical_stability = any(

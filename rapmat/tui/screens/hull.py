@@ -32,8 +32,8 @@ class PhaseAnalysisScreen(BaseResultsScreen):
             return
         keys = [
             ("a", "Show Best" if self._show_all else "Show All"),
-            ("u", "Unconverged"),
-            ("t", "Thickness"),
+            ("d", "Duplicates"),
+            ("t", "Thickness" if self._show_thickness else ""),
             ("/", "Search"),
             ("s", "Save"),
             ("p", "Phonons"),
@@ -177,14 +177,17 @@ class PhaseAnalysisScreen(BaseResultsScreen):
                 self._structures.append(data["atoms"])
 
         self.title = f"Phase Analysis: {self._study_system} | {len(self._results)} structures"
-        self._show_thickness = any(
+        is_bulk = study.get("domain", "bulk") == "bulk"
+        self._show_thickness = (not is_bulk) and any(
             r.get("thickness") is not None for r in self._results
         )
         self._show_dynamical_stability = any(
             r.get("min_phonon_freq") is not None or "dynamical_stability" in r
             for r in self._results
         )
-        self._show_duplicate_col = False
+        self._show_duplicate_col = any(
+            r.get("duplicate") is not None for r in self._results
+        )
 
     def _fetch_data(self) -> None:
         """Synchronous fallback (used when event loop is not available)."""
@@ -224,62 +227,70 @@ class PhaseAnalysisScreen(BaseResultsScreen):
         self._apply_fetch_result(box)
 
     def _columns_def(self) -> list[tuple[str, int]]:
+        # Core columns per system size
         if self._system_size < 2:
-            return [
+            cols = [
                 ("Formula", 14),
+                ("Final SG", 12),
                 ("E/atom", 10),
-                ("Run", 22),
             ]
         elif self._system_size == 2:
             cols = [
                 ("Formula", 14),
+                ("Final SG", 12),
                 ("x", 8),
                 ("E/atom", 10),
                 ("E_form", 10),
                 ("EAH", 10),
             ]
-            if self._show_dynamical_stability:
-                cols.append(("Dyn", 5))
-            cols.append(("Run", 22))
-            return cols
         else:
             cols = [
                 ("Formula", 14),
+                ("Final SG", 12),
                 ("E/atom", 10),
                 ("E_form", 10),
                 ("EAH", 10),
             ]
-            if self._show_dynamical_stability:
-                cols.append(("Dyn", 5))
-            cols.append(("Run", 22))
-            return cols
+        # Optional columns (shared across all system sizes)
+        if self._show_thickness:
+            cols.append(("Thick(A)", 9))
+        if self._show_dynamical_stability:
+            cols.append(("Dyn", 5))
+        if self._show_duplicate_col:
+            cols.append(("Dup", 5))
+        cols.append(("Run", 22))
+        return cols
 
     def _format_row(self, result: dict) -> list[str]:
         formula = result.get("reduced_formula", result.get("formula", "N/A"))
         epa = result.get("energy_per_atom", result.get("effective_per_atom", 0.0))
         run = result.get("run_name", "N/A")
+        spg = str(result.get("final_spg", ""))
 
         if self._system_size < 2:
-            return [formula, f"{epa:.4f}", run]
+            row = [formula, spg, f"{epa:.4f}"]
         elif self._system_size == 2:
             x = f"{result.get('composition_frac', 0.0):.3f}"
             e_form = f"{result.get('formation_energy', 0.0):.4f}"
             eah = f"{result.get('energy_above_hull', 0.0):.4f}"
-            row = [formula, x, f"{epa:.4f}", e_form, eah]
-            if self._show_dynamical_stability:
-                dyn = _dyn_stability(result, self._phonon_cutoff)
-                row.append("Yes" if dyn is True else ("No" if dyn is False else ""))
-            row.append(run)
-            return row
+            row = [formula, spg, x, f"{epa:.4f}", e_form, eah]
         else:
             e_form = f"{result.get('formation_energy', 0.0):.4f}"
             eah = f"{result.get('energy_above_hull', 0.0):.4f}"
-            row = [formula, f"{epa:.4f}", e_form, eah]
-            if self._show_dynamical_stability:
-                dyn = _dyn_stability(result, self._phonon_cutoff)
-                row.append("Yes" if dyn is True else ("No" if dyn is False else ""))
-            row.append(run)
-            return row
+            row = [formula, spg, f"{epa:.4f}", e_form, eah]
+
+        # Optional columns (must match _columns_def order)
+        if self._show_thickness:
+            t = result.get("thickness")
+            row.append("" if t is None else f"{t:.2f}")
+        if self._show_dynamical_stability:
+            dyn = _dyn_stability(result, self._phonon_cutoff)
+            row.append("Yes" if dyn is True else ("No" if dyn is False else ""))
+        if self._show_duplicate_col:
+            dup = result.get("duplicate")
+            row.append("Yes" if dup is True else ("No" if dup is False else ""))
+        row.append(run)
+        return row
 
     def _get_symprec(self) -> float:
         study = self._state.store.get_study(self._study_id)
