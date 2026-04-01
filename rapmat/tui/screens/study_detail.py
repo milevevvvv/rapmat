@@ -50,6 +50,8 @@ class StudyDetailScreen:
         self._router = router
         self._table: SortableTable | None = None
         self._placeholder: urwid.WidgetPlaceholder | None = None
+        self._details_text: urwid.Text | None = None
+        self._details_panel: urwid.Widget | None = None
 
     # ------------------------------------------------------------------ #
     #  Screen protocol
@@ -148,8 +150,18 @@ class StudyDetailScreen:
                 r["_status"],
             ],
             attr_fn=lambda r: "warning" if r.get("worker_id") else "body",
+            on_focus_change=self._on_run_focus_change,
         )
         urwid.connect_signal(self._table, "select", self._on_run_select)
+
+        self._details_text = urwid.Text("", align="left")
+        self._details_panel = urwid.BoxAdapter(
+            urwid.LineBox(
+                urwid.Filler(self._details_text, valign="top"),
+                title="Run Configuration",
+            ),
+            12,
+        )
 
         # Endpoint completeness check
         endpoint_elements: set[str] = set()
@@ -175,15 +187,46 @@ class StudyDetailScreen:
                 ("pack", urwid.Divider("─")),
                 ("weight", 1, self._table),
                 ("pack", urwid.Divider()),
+                ("pack", self._details_panel),
+                ("pack", urwid.Divider()),
                 ("pack", status_text),
             ]
         )
+        if self._table:
+            self._on_run_focus_change(self._table.get_focused_row())
         self._update_footer()
         return urwid.Padding(body, left=1, right=1)
 
     # ------------------------------------------------------------------ #
     #  Callbacks
     # ------------------------------------------------------------------ #
+
+    def _on_run_focus_change(self, run: dict | None) -> None:
+        if self._details_text is None:
+            return
+            
+        markup: list = []
+        if run is None:
+            markup.append(("details", "No run selected.\n"))
+        else:
+            config = run.get("config", {})
+            if not config:
+                markup.append(("details", "No configuration parameters available.\n"))
+            else:
+                for k in sorted(config.keys()):
+                    val = config[k]
+                    if isinstance(val, dict):
+                        import json
+                        try:
+                            val_str = json.dumps(val)
+                        except Exception:
+                            val_str = str(val)
+                    else:
+                        val_str = str(val)
+                    label = str(k).replace("_", " ").title() + ":"
+                    markup.append(("form_label", f"  {label:<22} "))
+                    markup.append(("details", f"{val_str}\n"))
+        self._details_text.set_text(markup)
 
     def _on_run_select(self, _table, run: dict) -> None:
         self._state.active_run = run["name"]
