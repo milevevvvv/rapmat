@@ -70,6 +70,8 @@ class StudyListScreen:
         self._sort_col: int = 0
         self._searching: bool = False
         self._widget: urwid.Widget | None = None
+        self._details_text: urwid.Text | None = None
+        self._details_panel: urwid.Widget | None = None
 
     # ------------------------------------------------------------------ #
     #  Screen protocol
@@ -115,8 +117,18 @@ class StudyListScreen:
             columns=_STUDY_COLS,
             row_data=self._all_rows,
             format_row=_format_study_row,
+            on_focus_change=self._on_study_focus_change,
         )
         urwid.connect_signal(self._table, "select", self._on_study_select)
+
+        self._details_text = urwid.Text("", align="left")
+        self._details_panel = urwid.BoxAdapter(
+            urwid.LineBox(
+                urwid.Filler(self._details_text, valign="top"),
+                title="Study Configuration",
+            ),
+            12,
+        )
 
         self._search_edit = _SearchEdit(
             on_change=self._apply_search,
@@ -134,9 +146,13 @@ class StudyListScreen:
                 ("pack", urwid.Divider("─")),
                 ("weight", 1, self._table),
                 ("pack", urwid.Divider()),
+                ("pack", self._details_panel),
+                ("pack", urwid.Divider()),
                 ("pack", self._footer_pile),
             ]
         )
+        if self._table:
+            self._on_study_focus_change(self._table.get_focused_row())
         return urwid.Padding(body, left=1, right=1)
 
     # ------------------------------------------------------------------ #
@@ -176,6 +192,33 @@ class StudyListScreen:
     # ------------------------------------------------------------------ #
     #  Callbacks
     # ------------------------------------------------------------------ #
+
+    def _on_study_focus_change(self, study: dict | None) -> None:
+        if self._details_text is None:
+            return
+        
+        markup: list = []
+        if study is None:
+            markup.append(("details", "No study selected.\n"))
+        else:
+            config = study.get("config", {})
+            if not config:
+                markup.append(("details", "No configuration parameters available.\n"))
+            else:
+                for k in sorted(config.keys()):
+                    val = config[k]
+                    if isinstance(val, dict):
+                        import json
+                        try:
+                            val_str = json.dumps(val)
+                        except Exception:
+                            val_str = str(val)
+                    else:
+                        val_str = str(val)
+                    label = str(k).replace("_", " ").title() + ":"
+                    markup.append(("form_label", f"  {label:<22} "))
+                    markup.append(("details", f"{val_str}\n"))
+        self._details_text.set_text(markup)
 
     def _on_study_select(self, _table, study: dict) -> None:
         self._state.active_study = study["study_id"]
