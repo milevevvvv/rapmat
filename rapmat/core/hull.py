@@ -86,9 +86,7 @@ def get_reference_energies(
 
         if best_epa is None:
             raise ValueError(
-                f"No relaxed pure-{el} structures found in study '{study_id}'. "
-                f"Add a pure-element run: "
-                f"rapmat csp search random ... --formula {el} --study {study_id}"
+                f"No relaxed pure-{el} structures found in study '{study_id}'."
             )
         ref_energies[el] = best_epa
 
