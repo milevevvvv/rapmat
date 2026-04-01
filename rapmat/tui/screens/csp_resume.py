@@ -90,6 +90,8 @@ class CSPResumeScreen:
                 ("details", str(config.get("domain", "—")) + "\n"),
                 ("form_label", "  Calculator: "),
                 ("details", str(config.get("calculator", "—")) + "\n"),
+                ("form_label", "  Seed:       "),
+                ("details", str(config.get("seed", "—")) + "\n"),
                 ("form_label", "  Status:     "),
                 ("details", str(meta.get("run_status", "—"))),
             ]

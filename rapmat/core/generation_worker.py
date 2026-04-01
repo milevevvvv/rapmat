@@ -32,10 +32,17 @@ def generate_one_structure(
     formula_values: list,
     search_dim: int,
     thickness_cutoff: float | None,
+    seed: int | None = None,
 ) -> tuple:
     """Pure CPU work: pyxtal generation + SOAP compute.
 
     Returns ``(status, struct_id, atoms, vector)``.
+
+    Parameters
+    ----------
+    seed
+        If provided, passed as ``random_state`` to PyXtal's
+        ``from_random()`` for reproducible generation.
     """
     import pyxtal
 
@@ -51,6 +58,7 @@ def generate_one_structure(
             numIons=elements_number,
             max_count=1000,
             thickness=thickness_cutoff if search_dim == 2 else None,
+            random_state=seed,
         )
         if crystal.valid:
             atoms = crystal.to_ase()

@@ -386,6 +386,7 @@ def run_generation_loop(
     search_dim = 3 if domain_val == "bulk" else 2
     formula = config.get("formula", {})
     thickness_cutoff = config.get("thickness_cutoff", None)
+    run_seed = config.get("seed")  # int | None
 
     elements = list(formula.keys())
     formula_values = list(formula.values())
@@ -439,8 +440,12 @@ def run_generation_loop(
 
             spg = ph["gen_spg"]
             fu = ph["gen_fu"]
+            struct_seed = (
+                (run_seed + counter) % (2**32) if run_seed is not None else None
+            )
             status, struct_id, atoms, vec = _generate_one_structure(
-                ph["id"], spg, fu, elements, formula_values, search_dim, None
+                ph["id"], spg, fu, elements, formula_values, search_dim, None,
+                seed=struct_seed,
             )
             _handle_result(status, struct_id, atoms, vec, spg, fu)
             _advance(counter)
@@ -473,8 +478,13 @@ def run_generation_loop(
                     formula_values,
                     search_dim,
                     None,
+                    seed=(
+                        (run_seed + idx) % (2**32)
+                        if run_seed is not None
+                        else None
+                    ),
                 ): ph
-                for ph in placeholders
+                for idx, ph in enumerate(placeholders, start=1)
             }
 
             for counter, future in enumerate(as_completed(futures), start=1):

@@ -102,6 +102,7 @@ class CSPSearchScreen:
                 int_field("fu_max", "Formula units max", default=4),
                 int_field("candidates", "Candidates/group", default=2),
                 text_field("run_name", "Run name", default=""),
+                int_field("seed", "Seed (0 = auto)", default=0),
                 int_field("workers", "Workers (CPU)", default=1),
             ],
             label_width=26,
@@ -254,6 +255,13 @@ class CSPSearchScreen:
         formula = parse_formula(formula_str) if formula_str else {}
         elements = list(formula.keys())
 
+        # Seed: auto-generate if 0
+        import random as _random
+        seed_val = vals.get("seed", 0)
+        if seed_val == 0:
+            seed_val = _random.randint(1, 2**32 - 1)
+        progress.log(f"Using seed: {seed_val}")
+
         study_raw = vals["study"]
         if study_raw.startswith("—"):
             raise ValueError("You must select a valid Study to start a run.")
@@ -346,6 +354,7 @@ class CSPSearchScreen:
                 "skip_not_converged": False,
                 "descriptor_id": descriptor.descriptor_id()[:12],
                 "vec_col": vec_col,
+                "seed": seed_val,
             }
             
             try:
