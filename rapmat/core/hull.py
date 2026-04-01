@@ -1,4 +1,4 @@
-"""Convex hull of thermodynamic stability.
+"""Phase analysis: convex hull and energy ranking.
 
 All functions are pure readers — they query the store but never mutate it.
 Formation energies and reference energies are computed on-the-fly (never cached).
@@ -140,11 +140,8 @@ def build_phase_diagram(
     elements = parse_system(study["system"])
     if len(elements) < 2:
         raise ValueError(
-            "Convex hull requires a binary or larger system (2+ elements)."
-        )
-    if len(elements) > 2:
-        raise ValueError(
-            "Only binary systems are supported for now. Ternary support is planned."
+            "Phase diagram requires a binary or larger system (2+ elements). "
+            "Use build_energy_ranking() for single-element studies."
         )
 
     runs = store.get_study_runs(study_id)
@@ -178,7 +175,11 @@ def build_phase_diagram(
                 {
                     "formula": formula_str,
                     "reduced_formula": reduced,
-                    "composition_frac": comp.get_atomic_fraction(elements[1]),
+                    "composition_frac": (
+                        comp.get_atomic_fraction(elements[1])
+                        if len(elements) == 2
+                        else None
+                    ),
                     "energy_per_atom": s["energy_per_atom"],
                     "enthalpy_per_atom": s.get("enthalpy_per_atom"),
                     "effective_per_atom": epa,
@@ -215,9 +216,42 @@ def build_phase_diagram(
                 best[key] = sd
         structure_data = list(best.values())
 
-    structure_data.sort(key=lambda d: d["composition_frac"])
+    structure_data.sort(key=lambda d: d.get("composition_frac") or 0.0)
     return pd, structure_data, use_enthalpy
 
+
+def build_energy_ranking(
+    store: "StructureStore",
+    study_id: str,
+) -> list[dict]:
+    """Build a simple energy ranking for single-element studies.
+
+    Returns a list of dicts sorted by energy_per_atom ascending.
+    """
+    study = store.get_study(study_id)
+    if study is None:
+        raise ValueError(f"Study '{study_id}' not found.")
+
+    runs = store.get_study_runs(study_id)
+    use_enthalpy = _study_has_pressure(runs)
+
+    structure_data: list[dict] = []
+    for run in runs:
+        structures = store.get_run_structures(run["name"], status="relaxed")
+        for s in structures:
+            epa = _effective_epa(s, use_enthalpy)
+            structure_data.append(
+                {
+                    "formula": s["formula"],
+                    "reduced_formula": Composition(s["formula"]).reduced_formula,
+                    "energy_per_atom": epa,
+                    "run_name": run["name"],
+                    "structure_id": s["id"],
+                }
+            )
+
+    structure_data.sort(key=lambda d: d["energy_per_atom"])
+    return structure_data
 
 # ------------------------------------------------------------------ #
 #  Binary hull plotting

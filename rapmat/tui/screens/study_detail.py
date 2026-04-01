@@ -74,7 +74,7 @@ class StudyDetailScreen:
                     ("r", "Resume Run"),
                     ("u", "Unlock Run"),
                     ("n", "New Run"),
-                    ("h", "Hull"),
+                    ("h", "Phase Analysis"),
                     ("d", "Dedup"),
                     ("Esc", "Back"),
                 ]
@@ -164,19 +164,29 @@ class StudyDetailScreen:
         )
 
         # Endpoint completeness check
+        n_elements = len(elements)
         endpoint_elements: set[str] = set()
         for run in runs:
             formula = run.get("config", {}).get("formula", {})
             if isinstance(formula, dict) and len(formula) == 1:
                 endpoint_elements.update(formula.keys())
         missing = set(elements) - endpoint_elements
-        if missing:
+
+        if n_elements < 2:
+            status_text = urwid.Text(
+                ("details", "  Single-element system. Phase analysis shows energy ranking.")
+            )
+        elif missing:
             status_text = urwid.Text(
                 ("unconv", f"  Missing pure-element runs: {', '.join(sorted(missing))}")
             )
+        elif n_elements == 2:
+            status_text = urwid.Text(
+                ("success", "  All endpoints present. Phase analysis available.")
+            )
         else:
             status_text = urwid.Text(
-                ("success", "  All endpoints present. Ready to view hull.")
+                ("success", "  All endpoints present. Phase analysis available (table only).")
             )
 
         body = urwid.Pile(
@@ -264,9 +274,9 @@ class StudyDetailScreen:
                     self._on_unlock_run(run["name"])
             return None
         if key in ("h", "H"):
-            from rapmat.tui.screens.hull import HullScreen
+            from rapmat.tui.screens.hull import PhaseAnalysisScreen
 
-            self._router.push(HullScreen(self._state, self._router))
+            self._router.push(PhaseAnalysisScreen(self._state, self._router))
             return None
         if key in ("d", "D"):
             if self._table is not None:
