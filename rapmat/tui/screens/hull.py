@@ -92,28 +92,9 @@ class PhaseAnalysisScreen:
     #  Layout
     # ------------------------------------------------------------------ #
 
-    def _study_options(self) -> list[str]:
-        names = []
-        for s in self._state.studies_cache:
-            sid = s.get("study_id") or s.get("id") or s.get("name", "")
-            if isinstance(sid, str) and ":" in sid:
-                sid = sid.split(":")[-1]
-            names.append(str(sid))
-        return names if names else ["(no studies)"]
-
     def _build_frame(self) -> urwid.Frame:
-        study_opts = self._study_options()
-        default_idx = 0
-        if self._state.active_study:
-            sid = self._state.active_study
-            if isinstance(sid, str) and ":" in sid:
-                sid = sid.split(":")[-1]
-            if sid in study_opts:
-                default_idx = study_opts.index(sid)
-
         self._form = FormGroup(
             [
-                dropdown_field("study_id", "Study", study_opts, default=default_idx),
                 checkbox_field("show_all", "Show all structures", default=False),
             ],
             label_width=22,
@@ -164,7 +145,13 @@ class PhaseAnalysisScreen:
         self._structure_data = None
 
         vals = self._form.get_values()
-        study_id = vals["study_id"]
+        study_id = self._state.active_study
+        if not study_id:
+            self._error_text.set_text(("form_error", "No active study selected."))
+            return
+        if isinstance(study_id, str) and ":" in study_id:
+            study_id = study_id.split(":")[-1]
+            
         show_all = vals["show_all"]
 
         store = self._state.store
