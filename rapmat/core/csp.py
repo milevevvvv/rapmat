@@ -72,6 +72,9 @@ def run_processing_loop(
 
     force_conv_crit = float(config.get("force_conv_crit", 5e-2))
     steps_max = int(config.get("steps_max", 500))
+    forces_break = config.get("forces_break", 1000.0)
+    if forces_break is not None:
+        forces_break = float(forces_break)
 
     calculator_workdir_path = workdir_path / Path("calculator")
     calculator_workdir_path.mkdir(parents=True, exist_ok=True)
@@ -182,6 +185,7 @@ def run_processing_loop(
                             / Path(f"opt_{struct_id.replace('/', '_')}.log")
                         ),
                         scalar_pressure=pressure_evA3,
+                        forces_break=forces_break,
                         cancel_flag=cancel_flag,
                         progress_callback=_optim_cb,
                     )
