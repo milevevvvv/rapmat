@@ -6,12 +6,6 @@ from pathlib import Path
 import urwid
 
 from rapmat.tui.widgets.dialog import ModalDialog
-from rapmat.tui.widgets.form import (
-    FormGroup,
-    checkbox_field,
-    dropdown_field,
-    float_field,
-)
 from rapmat.tui.widgets.table import SortableTable
 
 from rapmat.tui.router import ScreenRouter
@@ -61,6 +55,7 @@ class PhaseAnalysisScreen:
         self._study_system: str = ""
         self._system_size: int = 0  # 1=unary, 2=binary, 3+=ternary+
         self._use_enthalpy: bool = False
+        self._show_all: bool = False
 
     # ------------------------------------------------------------------ #
     #  Screen protocol
@@ -69,6 +64,7 @@ class PhaseAnalysisScreen:
     def build(self) -> urwid.Widget:
         self._state.refresh_studies_if_needed()
         self._frame = self._build_frame()
+        self._on_compute() 
         return self._frame
 
     def on_resume(self) -> None:
@@ -80,6 +76,7 @@ class PhaseAnalysisScreen:
     def _update_footer(self) -> None:
         if self._state.status_bar:
             keys = [
+                ("a", "Show Best" if self._show_all else "Show All"),
                 ("F5", "Compute"),
                 ("Esc", "Back"),
             ]
@@ -93,44 +90,9 @@ class PhaseAnalysisScreen:
     # ------------------------------------------------------------------ #
 
     def _build_frame(self) -> urwid.Frame:
-        self._form = FormGroup(
-            [
-                checkbox_field("show_all", "Show all structures", default=False),
-            ],
-            label_width=22,
-        )
-
-        self._error_text = urwid.Text("")
         self._results_placeholder = urwid.WidgetPlaceholder(urwid.SolidFill(" "))
-
-        compute_btn = urwid.AttrMap(
-            urwid.Button("Compute [F5]", on_press=self._on_compute),
-            "menu_item",
-            focus_map="btn_focus",
-        )
-
-        listbox_form = urwid.ListBox(
-            urwid.SimpleListWalker(
-                [
-                    self._form,
-                    urwid.Divider(),
-                    urwid.Columns([(18, compute_btn)], dividechars=1),
-                    self._error_text,
-                ]
-            )
-        )
-        form_area = urwid.ScrollBar(
-            listbox_form,
-            trough_char=urwid.ScrollBar.Symbols.LITE_SHADE,
-        )
-
-        body = urwid.Pile(
-            [
-                ("weight", 2, form_area),
-                ("weight", 3, self._results_placeholder),
-            ]
-        )
-
+        # Give some padding to breathe
+        body = urwid.Padding(self._results_placeholder, left=1, right=1)
         self._main_body = body
         self._update_footer()
         return urwid.Frame(body=body)
@@ -140,25 +102,23 @@ class PhaseAnalysisScreen:
     # ------------------------------------------------------------------ #
 
     def _on_compute(self, _btn=None) -> None:
-        self._error_text.set_text("")
         self._results_placeholder.original_widget = urwid.SolidFill(" ")
         self._structure_data = None
 
-        vals = self._form.get_values()
         study_id = self._state.active_study
         if not study_id:
-            self._error_text.set_text(("form_error", "No active study selected."))
+            self._results_placeholder.original_widget = urwid.Filler(urwid.Text(("form_error", "No active study selected.")))
             return
         if isinstance(study_id, str) and ":" in study_id:
             study_id = study_id.split(":")[-1]
             
-        show_all = vals["show_all"]
+        show_all = self._show_all
 
         store = self._state.store
 
         study = store.get_study(study_id)
         if study is None:
-            self._error_text.set_text(("form_error", f"Study '{study_id}' not found"))
+            self._results_placeholder.original_widget = urwid.Filler(urwid.Text(("form_error", f"Study '{study_id}' not found")))
             return
 
         symprec = study.get("config", {}).get("symprec", 1e-3)
@@ -189,7 +149,7 @@ class PhaseAnalysisScreen:
                 else:
                     self._show_multi_results(structure_data, study, use_enthalpy)
         except Exception as e:
-            self._error_text.set_text(("form_error", f"Error: {e}"))
+            self._results_placeholder.original_widget = urwid.Filler(urwid.Text(("form_error", f"Error: {e}")))
             return
 
         self._update_footer()
@@ -350,6 +310,10 @@ class PhaseAnalysisScreen:
     # ------------------------------------------------------------------ #
 
     def keypress(self, size: tuple, key: str) -> str | None:
+        if key in ("a", "A"):
+            self._show_all = not self._show_all
+            self._on_compute()
+            return None
         if key == "f5":
             self._on_compute()
             return None
