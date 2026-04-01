@@ -187,6 +187,7 @@ def build_phase_diagram(
                     "formation_energy": formation_energy,
                     "run_name": run["name"],
                     "structure_id": s["id"],
+                    "atoms": s["atoms"],
                 }
             )
 
@@ -247,6 +248,7 @@ def build_energy_ranking(
                     "energy_per_atom": epa,
                     "run_name": run["name"],
                     "structure_id": s["id"],
+                    "atoms": s["atoms"],
                 }
             )
 
