@@ -131,8 +131,6 @@ class PhaseAnalysisScreen:
         listbox_form = urwid.ListBox(
             urwid.SimpleListWalker(
                 [
-                    urwid.Text(("section", " Phase Analysis"), align="left"),
-                    urwid.Divider("─"),
                     self._form,
                     urwid.Divider(),
                     urwid.Columns([(18, compute_btn)], dividechars=1),
