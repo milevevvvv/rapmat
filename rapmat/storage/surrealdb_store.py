@@ -474,6 +474,23 @@ class SurrealDBStore(StructureStore):
             "timestamp": row["timestamp"],
         }
 
+    def update_study(self, study_id: str, fields: dict) -> None:
+        """Update fields on a study record."""
+        set_exprs = []
+        params = {}
+        if "config" in fields:
+            set_exprs.append("config_json = $cfg")
+            params["cfg"] = json.dumps(fields["config"])
+
+        if not set_exprs:
+            return
+
+        set_clause = ", ".join(set_exprs)
+        self._db.query(
+            f"UPDATE {_record_id('study', study_id)} SET {set_clause}",
+            params,
+        )
+
     def list_studies(self) -> List[dict]:
         rows = _as_rows(self._db.query("SELECT * FROM study"))
         return [
