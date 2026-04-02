@@ -216,6 +216,11 @@ class StructureStore(ABC):
     def get_study(self, study_id: str) -> Optional[dict]: ...
 
     @abstractmethod
+    def update_study(self, study_id: str, fields: dict) -> None:
+        """Update fields on a study record (e.g. config)."""
+        ...
+
+    @abstractmethod
     def list_studies(self) -> List[dict]: ...
 
     @abstractmethod

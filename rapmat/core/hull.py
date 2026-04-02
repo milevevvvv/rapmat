@@ -1,4 +1,4 @@
-"""Convex hull of thermodynamic stability.
+"""Phase analysis: convex hull and energy ranking.
 
 All functions are pure readers — they query the store but never mutate it.
 Formation energies and reference energies are computed on-the-fly (never cached).
@@ -86,9 +86,7 @@ def get_reference_energies(
 
         if best_epa is None:
             raise ValueError(
-                f"No relaxed pure-{el} structures found in study '{study_id}'. "
-                f"Add a pure-element run: "
-                f"rapmat csp search random ... --formula {el} --study {study_id}"
+                f"No relaxed pure-{el} structures found in study '{study_id}'."
             )
         ref_energies[el] = best_epa
 
@@ -106,6 +104,7 @@ def build_phase_diagram(
     symprec: float = 1e-3,
     *,
     show_all: bool = False,
+    hull_cutoff: float = 0.0,
 ) -> tuple[PhaseDiagram, list[dict], bool]:
     """Build a pymatgen ``PhaseDiagram`` from study data.
 
@@ -118,8 +117,10 @@ def build_phase_diagram(
     symprec
         Symmetry precision for space-group labels.
     show_all
-        If *True*, include every relaxed structure in the returned list
-        (not just the ground state per composition).
+        If *True*, include every relaxed structure in the returned list.
+    hull_cutoff
+        If *show_all* is False, include structures within this energy (eV/atom)
+        of the convex hull.
 
     Returns
     -------
@@ -129,11 +130,6 @@ def build_phase_diagram(
         Per-structure records used for plotting / reporting.
     use_enthalpy : bool
         Whether enthalpy was used (True when any run has pressure > 0).
-
-    Raises
-    ------
-    ValueError
-        On invalid system size, missing endpoints, or insufficient data.
     """
     study = store.get_study(study_id)
     if study is None:
@@ -142,11 +138,8 @@ def build_phase_diagram(
     elements = parse_system(study["system"])
     if len(elements) < 2:
         raise ValueError(
-            "Convex hull requires a binary or larger system (2+ elements)."
-        )
-    if len(elements) > 2:
-        raise ValueError(
-            "Only binary systems are supported for now. Ternary support is planned."
+            "Phase diagram requires a binary or larger system (2+ elements). "
+            "Use build_energy_ranking() for single-element studies."
         )
 
     runs = store.get_study_runs(study_id)
@@ -180,7 +173,11 @@ def build_phase_diagram(
                 {
                     "formula": formula_str,
                     "reduced_formula": reduced,
-                    "composition_frac": comp.get_atomic_fraction(elements[1]),
+                    "composition_frac": (
+                        comp.get_atomic_fraction(elements[1])
+                        if len(elements) == 2
+                        else None
+                    ),
                     "energy_per_atom": s["energy_per_atom"],
                     "enthalpy_per_atom": s.get("enthalpy_per_atom"),
                     "effective_per_atom": epa,
@@ -188,6 +185,14 @@ def build_phase_diagram(
                     "formation_energy": formation_energy,
                     "run_name": run["name"],
                     "structure_id": s["id"],
+                    "atoms": s["atoms"],
+                    "initial_spg": s.get("initial_spg"),
+                    "final_spg": s.get("final_spg"),
+                    "fmax": s.get("fmax"),
+                    "thickness": s.get("thickness"),
+                    "min_phonon_freq": s.get("min_phonon_freq"),
+                    "duplicate": s.get("duplicate"),
+                    "volume": s.get("volume"),
                 }
             )
 
@@ -207,19 +212,72 @@ def build_phase_diagram(
         sd["is_stable"] = sd["energy_above_hull"] < 1e-6
 
     if not show_all:
-        best: dict[str, dict] = {}
-        for sd in structure_data:
-            key = sd["reduced_formula"]
-            if (
-                key not in best
-                or sd["formation_energy"] < best[key]["formation_energy"]
-            ):
-                best[key] = sd
-        structure_data = list(best.values())
+        structure_data = [
+            sd for sd in structure_data if sd["energy_above_hull"] <= hull_cutoff + 1e-9
+        ]
 
-    structure_data.sort(key=lambda d: d["composition_frac"])
+    structure_data.sort(key=lambda d: d.get("composition_frac") or 0.0)
     return pd, structure_data, use_enthalpy
 
+
+def build_energy_ranking(
+    store: StructureStore,
+    study_id: str,
+    *,
+    show_all: bool = False,
+    hull_cutoff: float = 0.0,
+) -> list[dict]:
+    """Build a simple energy ranking for single-element studies.
+
+    If *show_all* is False, filters structures within *hull_cutoff* of the
+    ground state.
+    """
+    study = store.get_study(study_id)
+    if study is None:
+        raise ValueError(f"Study '{study_id}' not found.")
+
+    runs = store.get_study_runs(study_id)
+    use_enthalpy = _study_has_pressure(runs)
+
+    structure_data: list[dict] = []
+    for run in runs:
+        structures = store.get_run_structures(run["name"], status="relaxed")
+        for s in structures:
+            epa = _effective_epa(s, use_enthalpy)
+            structure_data.append(
+                {
+                    "formula": s["formula"],
+                    "reduced_formula": Composition(s["formula"]).reduced_formula,
+                    "energy_per_atom": epa,
+                    "run_name": run["name"],
+                    "structure_id": s["id"],
+                    "atoms": s["atoms"],
+                    "initial_spg": s.get("initial_spg"),
+                    "final_spg": s.get("final_spg"),
+                    "fmax": s.get("fmax"),
+                    "thickness": s.get("thickness"),
+                    "min_phonon_freq": s.get("min_phonon_freq"),
+                    "duplicate": s.get("duplicate"),
+                    "volume": s.get("volume"),
+                }
+            )
+
+    if not structure_data:
+        return []
+
+    structure_data.sort(key=lambda d: d["energy_per_atom"])
+    min_e = structure_data[0]["energy_per_atom"]
+
+    for sd in structure_data:
+        sd["energy_above_hull"] = sd["energy_per_atom"] - min_e
+        sd["is_stable"] = sd["energy_above_hull"] < 1e-6
+
+    if not show_all:
+        structure_data = [
+            sd for sd in structure_data if sd["energy_above_hull"] <= hull_cutoff + 1e-9
+        ]
+
+    return structure_data
 
 # ------------------------------------------------------------------ #
 #  Binary hull plotting

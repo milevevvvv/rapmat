@@ -224,3 +224,78 @@ class ModalDialog(urwid.WidgetWrap):
 
         dlg.keypress = _keypress  # type: ignore[method-assign]
         return dlg
+
+    @staticmethod
+    def input_text(
+        title: str,
+        message: str,
+        parent: urwid.Widget,
+        on_save: "Callable[[str], None]",
+        on_cancel: "Callable[[], None] | None" = None,
+        default: str = "",
+    ) -> "ModalDialog":
+        """Build a dialog with a text input field and Save / Cancel buttons.
+
+        Parameters
+        ----------
+        title:
+            Dialog title.
+        message:
+            Label text above the input field.
+        parent:
+            Widget behind the dialog overlay.
+        on_save:
+            Callback receiving the entered text when Save is pressed.
+        on_cancel:
+            Optional callback when Cancel or Esc is pressed.
+        default:
+            Default text to pre-fill the input.
+        """
+        dlg: ModalDialog | None = None
+        edit = urwid.Edit(caption="  ", edit_text=default)
+
+        def _save(btn: urwid.Button) -> None:
+            assert dlg is not None
+            dlg._emit("close", True)
+            on_save(edit.get_edit_text())
+
+        def _cancel(btn: urwid.Button) -> None:
+            assert dlg is not None
+            dlg._emit("close", False)
+            if on_cancel:
+                on_cancel()
+
+        save_btn = urwid.AttrMap(
+            urwid.Button("Save", on_press=_save), None, focus_map="btn_focus"
+        )
+        cancel_btn = urwid.AttrMap(
+            urwid.Button("Cancel", on_press=_cancel), None, focus_map="btn_focus"
+        )
+
+        body = urwid.Pile(
+            [
+                urwid.Text(message),
+                urwid.Divider(),
+                urwid.AttrMap(edit, "input"),
+                urwid.Divider(),
+                urwid.Columns(
+                    [("weight", 1, save_btn), ("weight", 1, cancel_btn)],
+                    dividechars=2,
+                ),
+            ]
+        )
+        dlg = ModalDialog(title, body, parent)
+
+        original_keypress = dlg.keypress
+
+        def _keypress(size: tuple, key: str) -> str | None:
+            if key == "esc":
+                assert dlg is not None
+                dlg._emit("close", False)
+                if on_cancel:
+                    on_cancel()
+                return None
+            return original_keypress(size, key)
+
+        dlg.keypress = _keypress  # type: ignore[method-assign]
+        return dlg
