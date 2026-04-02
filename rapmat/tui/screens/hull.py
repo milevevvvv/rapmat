@@ -262,7 +262,7 @@ class PhaseAnalysisScreen(BaseResultsScreen):
         return cols
 
     def _format_row(self, result: dict) -> list[str]:
-        formula = result.get("reduced_formula", result.get("formula", "N/A"))
+        formula = result.get("formula", result.get("reduced_formula", "N/A"))
         epa = result.get("energy_per_atom", result.get("effective_per_atom", 0.0))
         run = result.get("run_name", "N/A")
         spg = str(result.get("final_spg", ""))
