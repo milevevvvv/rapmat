@@ -104,6 +104,7 @@ def build_phase_diagram(
     symprec: float = 1e-3,
     *,
     show_all: bool = False,
+    hull_cutoff: float = 0.0,
 ) -> tuple[PhaseDiagram, list[dict], bool]:
     """Build a pymatgen ``PhaseDiagram`` from study data.
 
@@ -116,8 +117,10 @@ def build_phase_diagram(
     symprec
         Symmetry precision for space-group labels.
     show_all
-        If *True*, include every relaxed structure in the returned list
-        (not just the ground state per composition).
+        If *True*, include every relaxed structure in the returned list.
+    hull_cutoff
+        If *show_all* is False, include structures within this energy (eV/atom)
+        of the convex hull.
 
     Returns
     -------
@@ -127,11 +130,6 @@ def build_phase_diagram(
         Per-structure records used for plotting / reporting.
     use_enthalpy : bool
         Whether enthalpy was used (True when any run has pressure > 0).
-
-    Raises
-    ------
-    ValueError
-        On invalid system size, missing endpoints, or insufficient data.
     """
     study = store.get_study(study_id)
     if study is None:
@@ -214,28 +212,25 @@ def build_phase_diagram(
         sd["is_stable"] = sd["energy_above_hull"] < 1e-6
 
     if not show_all:
-        best: dict[str, dict] = {}
-        for sd in structure_data:
-            key = sd["reduced_formula"]
-            if (
-                key not in best
-                or sd["formation_energy"] < best[key]["formation_energy"]
-            ):
-                best[key] = sd
-        structure_data = list(best.values())
+        structure_data = [
+            sd for sd in structure_data if sd["energy_above_hull"] <= hull_cutoff + 1e-9
+        ]
 
     structure_data.sort(key=lambda d: d.get("composition_frac") or 0.0)
     return pd, structure_data, use_enthalpy
 
 
 def build_energy_ranking(
-    store: "StructureStore",
+    store: StructureStore,
     study_id: str,
+    *,
     show_all: bool = False,
+    hull_cutoff: float = 0.0,
 ) -> list[dict]:
     """Build a simple energy ranking for single-element studies.
 
-    Returns a list of dicts sorted by energy_per_atom ascending.
+    If *show_all* is False, filters structures within *hull_cutoff* of the
+    ground state.
     """
     study = store.get_study(study_id)
     if study is None:
@@ -267,9 +262,21 @@ def build_energy_ranking(
                 }
             )
 
+    if not structure_data:
+        return []
+
     structure_data.sort(key=lambda d: d["energy_per_atom"])
-    if not show_all and structure_data:
-        return structure_data[:1]
+    min_e = structure_data[0]["energy_per_atom"]
+
+    for sd in structure_data:
+        sd["energy_above_hull"] = sd["energy_per_atom"] - min_e
+        sd["is_stable"] = sd["energy_above_hull"] < 1e-6
+
+    if not show_all:
+        structure_data = [
+            sd for sd in structure_data if sd["energy_above_hull"] <= hull_cutoff + 1e-9
+        ]
+
     return structure_data
 
 # ------------------------------------------------------------------ #

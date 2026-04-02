@@ -24,6 +24,7 @@ class PhaseAnalysisScreen(BaseResultsScreen):
         self._system_size: int = 0
         self._use_enthalpy: bool = False
         self._show_all: bool = True
+        self._hull_cutoff: float = 0.0
         self._loading_task: BackgroundTask | None = None
         self._outer_placeholder: urwid.WidgetPlaceholder | None = None
 
@@ -32,6 +33,7 @@ class PhaseAnalysisScreen(BaseResultsScreen):
             return
         keys = [
             ("a", "Show Best" if self._show_all else "Show All"),
+            ("c", "Cutoff" if not self._show_all else ""),
             ("d", "Duplicates"),
             ("t", "Thickness" if self._show_thickness else ""),
             ("/", "Search"),
@@ -82,6 +84,7 @@ class PhaseAnalysisScreen(BaseResultsScreen):
         _store = self._state.store
         _active_study = self._state.active_study
         _show_all = self._show_all
+        _hull_cutoff = self._hull_cutoff
 
         # Mutable container for results from the worker thread
         _result_box: dict = {}
@@ -111,13 +114,13 @@ class PhaseAnalysisScreen(BaseResultsScreen):
             if system_size < 2:
                 from rapmat.core.hull import build_energy_ranking
                 progress.log("Building energy ranking...")
-                sd = build_energy_ranking(_store, str(study_id), show_all=_show_all)
+                sd = build_energy_ranking(_store, str(study_id), show_all=_show_all, hull_cutoff=_hull_cutoff)
                 use_enthalpy = False
             else:
                 from rapmat.core.hull import build_phase_diagram
                 progress.log("Building phase diagram...")
                 _, sd, use_enthalpy = build_phase_diagram(
-                    _store, str(study_id), symprec=symprec, show_all=_show_all
+                    _store, str(study_id), symprec=symprec, show_all=_show_all, hull_cutoff=_hull_cutoff
                 )
 
             progress.update(1, 1, f"Done — {len(sd)} structures")
@@ -211,12 +214,12 @@ class PhaseAnalysisScreen(BaseResultsScreen):
 
         if system_size < 2:
             from rapmat.core.hull import build_energy_ranking
-            sd = build_energy_ranking(store, str(study_id), show_all=self._show_all)
+            sd = build_energy_ranking(store, str(study_id), show_all=self._show_all, hull_cutoff=self._hull_cutoff)
             use_enthalpy = False
         else:
             from rapmat.core.hull import build_phase_diagram
             _, sd, use_enthalpy = build_phase_diagram(
-                store, str(study_id), symprec=symprec, show_all=self._show_all
+                store, str(study_id), symprec=symprec, show_all=self._show_all, hull_cutoff=self._hull_cutoff
             )
 
         box.update({
@@ -329,13 +332,48 @@ class PhaseAnalysisScreen(BaseResultsScreen):
 
     def keypress(self, size: tuple, key: str) -> str | None:
         if key in ("a", "A"):
-            self._show_all = not self._show_all
-            self._start_async_fetch()
+            if self._show_all:
+                self._open_cutoff_modal()
+            else:
+                self._show_all = True
+                self._start_async_fetch()
+            return None
+        if key in ("c", "C") and not self._show_all:
+            self._open_cutoff_modal()
             return None
         if key in ("S",) and self._system_size == 2:
             self._open_save_plot_modal()
             return None
         return super().keypress(size, key)
+
+    def _open_cutoff_modal(self) -> None:
+        if self._main_frame is None:
+            return
+
+        current_body = self._main_frame.body
+
+        def _on_save(val_str: str) -> None:
+            self._main_frame.body = current_body
+            try:
+                cutoff = float(val_str)
+                self._hull_cutoff = max(0.0, cutoff)
+                self._show_all = False
+                self._start_async_fetch()
+            except ValueError:
+                self._show_message("Invalid cutoff — must be a number.")
+
+        def _cancel() -> None:
+            self._main_frame.body = current_body
+
+        dlg = ModalDialog.input_text(
+            title="Hull Cutoff",
+            message="Enter Energy Above Hull cutoff (eV/atom):",
+            parent=current_body,
+            on_save=_on_save,
+            on_cancel=_cancel,
+            default=f"{self._hull_cutoff:.2f}",
+        )
+        self._main_frame.body = dlg
 
     def _open_save_plot_modal(self) -> None:
         if self._system_size != 2 or self._main_frame is None:
