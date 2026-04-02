@@ -41,6 +41,13 @@ all-calculators = ["mattersim>=1.2.0", "nequip>=0.16.2", "upet>=0.2.1"]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+[tool.hatch.version]
+source = "vcs"
+tag = true
+
+[tool.hatch.envs.default]
+dependencies = ["hatch-vcs"]
+
 [project.scripts]
 rapmat = "rapmat.main:app_main"
 
