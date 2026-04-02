@@ -23,7 +23,7 @@ class PhaseAnalysisScreen(BaseResultsScreen):
         self._study_system: str = ""
         self._system_size: int = 0
         self._use_enthalpy: bool = False
-        self._show_all: bool = False
+        self._show_all: bool = True
         self._loading_task: BackgroundTask | None = None
         self._outer_placeholder: urwid.WidgetPlaceholder | None = None
 
@@ -111,7 +111,7 @@ class PhaseAnalysisScreen(BaseResultsScreen):
             if system_size < 2:
                 from rapmat.core.hull import build_energy_ranking
                 progress.log("Building energy ranking...")
-                sd = build_energy_ranking(_store, str(study_id))
+                sd = build_energy_ranking(_store, str(study_id), show_all=_show_all)
                 use_enthalpy = False
             else:
                 from rapmat.core.hull import build_phase_diagram
@@ -211,7 +211,7 @@ class PhaseAnalysisScreen(BaseResultsScreen):
 
         if system_size < 2:
             from rapmat.core.hull import build_energy_ranking
-            sd = build_energy_ranking(store, str(study_id))
+            sd = build_energy_ranking(store, str(study_id), show_all=self._show_all)
             use_enthalpy = False
         else:
             from rapmat.core.hull import build_phase_diagram

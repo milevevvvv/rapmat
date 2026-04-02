@@ -231,6 +231,7 @@ def build_phase_diagram(
 def build_energy_ranking(
     store: "StructureStore",
     study_id: str,
+    show_all: bool = False,
 ) -> list[dict]:
     """Build a simple energy ranking for single-element studies.
 
@@ -267,6 +268,8 @@ def build_energy_ranking(
             )
 
     structure_data.sort(key=lambda d: d["energy_per_atom"])
+    if not show_all and structure_data:
+        return structure_data[:1]
     return structure_data
 
 # ------------------------------------------------------------------ #
