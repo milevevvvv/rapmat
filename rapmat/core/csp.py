@@ -1,3 +1,4 @@
+import traceback
 from enum import Enum
 from pathlib import Path
 
@@ -316,11 +317,14 @@ def run_processing_loop(
                     break
 
                 except Exception as ex:
-                    _report(f"ERROR: {ex}")
+                    tb = traceback.format_exc()
+                    _report(f"ERROR on {struct_id} (attempt {attempt + 1}/3): {ex}")
+                    _report(f"Traceback:\n{tb}")
                     if attempt == 2:
                         err_console.print(
                             f"[red]Failed to relax structure {struct_id}: {ex}[/red]"
                         )
+                        err_console.print(f"[dim]{tb}[/dim]")
                         store.update_structure(struct_id, status="error")
                         break
 
@@ -331,15 +335,19 @@ def run_processing_loop(
                     except Exception:
                         pass
                     
-                    _report(f"Reloading calculator {calculator_name} after error...")
+                    _report(f"Reloading calculator {calculator_name} after error (attempt {attempt + 1})...")
                     try:
                         calculator = load_calculator(
                             Calculators(calculator_name), config=calculator_config,
                             callback=_calc_cb,
                         )
+                        _report(f"Calculator {calculator_name} reloaded successfully.")
                     except Exception as reload_ex:
+                        reload_tb = traceback.format_exc()
                         err_console.print(f"[red]Calculator reload failed: {reload_ex}[/red]")
+                        err_console.print(f"[dim]{reload_tb}[/dim]")
                         _report(f"CRITICAL ERROR: Reload failed: {reload_ex}")
+                        _report(f"Reload traceback:\n{reload_tb}")
                         store.update_structure(struct_id, status="error")
                         break # Give up on this structure if reload fails
 
