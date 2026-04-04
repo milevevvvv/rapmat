@@ -225,6 +225,7 @@ class EvalScreen:
 
         if pending:
             with workdir_context(None) as wdir:
+                progress.log(f"Working directory: {wdir}")
                 calculator = load_calculator(
                     Calculators(calculator_name),
                     wdir,

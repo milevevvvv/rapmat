@@ -200,6 +200,7 @@ class PhononDispersionScreen:
             structure = structure[-1]
 
         with workdir_context(None) as wdir:
+            progress.log(f"Working directory: {wdir}")
             progress.update(1, 5, "Loading calculator")
             progress.log(f"Loading calculator {calculator_name}...")
             calculator = load_calculator(

@@ -387,7 +387,8 @@ class CSPSearchScreen:
             progress.log(f"[{i+1}/{len(runs_created)}] Starting generation phase for {run_name}...")
             try:
                 with workdir_context(None) as workdir_path:
-                    
+                    progress.log(f"Working directory: {workdir_path}")
+
                     # We need the full config for the loops
                     meta = store.get_run_metadata(run_name) or {}
                     full_cfg = meta.get("config", run_config)
