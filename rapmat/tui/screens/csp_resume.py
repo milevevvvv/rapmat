@@ -199,6 +199,7 @@ class CSPResumeScreen:
 
         try:
             with workdir_context(None) as workdir_path:
+                progress.log(f"Working directory: {workdir_path}")
                 if original_status == "generating":
                     progress.log("Finishing generation phase...")
                     store.set_run_status(run_name, "generating")
