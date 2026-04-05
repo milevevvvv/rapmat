@@ -496,6 +496,13 @@ class SurrealDBStore(StructureStore):
             params,
         )
 
+    def delete_study(self, study_id: str) -> None:
+        """Permanently delete a study and all associated runs and structures."""
+        sid = _record_id('study', study_id)
+        self._db.query(f"DELETE structure WHERE run.study = {sid}")
+        self._db.query(f"DELETE run WHERE study = {sid}")
+        self._db.query(f"DELETE {sid}")
+
     def list_studies(self) -> List[dict]:
         rows = _as_rows(self._db.query("SELECT * FROM study"))
         return [

@@ -226,6 +226,11 @@ class StructureStore(ABC):
         ...
 
     @abstractmethod
+    def delete_study(self, study_id: str) -> None:
+        """Permanently delete a study and all its associated runs and structures."""
+        ...
+
+    @abstractmethod
     def list_studies(self) -> List[dict]: ...
 
     @abstractmethod
