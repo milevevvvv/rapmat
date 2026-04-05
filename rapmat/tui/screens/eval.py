@@ -130,8 +130,6 @@ class EvalScreen:
         listbox_form = urwid.ListBox(
             urwid.SimpleListWalker(
                 [
-                    urwid.Text(("section", " Evaluate CSP Run"), align="left"),
-                    urwid.Divider("─"),
                     self._form,
                     urwid.Divider(),
                     urwid.Columns([(18, start_btn)], dividechars=1),
