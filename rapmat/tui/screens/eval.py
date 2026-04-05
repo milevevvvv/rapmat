@@ -107,7 +107,7 @@ class EvalScreen:
                 ),
                 int_field("top_n", "Top N (0=all)", default=0),
                 checkbox_field("run_phonons", "Run phonons", default=False),
-                checkbox_field("stable_only", "Dyn. stable only (tau)", default=True),
+                checkbox_field("stable_only", "Dyn. stable only (tau)", default=False),
                 tuple_field(
                     "phonon_supercell", "Phonon supercell", size=3, default=(3, 3, 3)
                 ),
