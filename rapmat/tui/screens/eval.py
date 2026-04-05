@@ -318,7 +318,7 @@ class EvalScreen:
             lines.append(f"MAE eV/atom: {ranking['mae_epa']:.4f}")
         if stability is not None:
             lines.append(
-                f"Stability F1: {stability['f1']:.4f}  "
+                f"Dyn. stability F1: {stability['f1']:.4f}  "
                 f"(P={stability['precision']:.2f}, R={stability['recall']:.2f})"
             )
 
