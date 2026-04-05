@@ -25,6 +25,7 @@ def run_eval_loop(
     phonon_supercell: tuple = (3, 3, 3),
     phonon_mesh: tuple = (20, 20, 20),
     progress_callback=None,
+    log_callback=None,
 ) -> None:
     """Evaluate *pending* structures with *calculator* and store results.
 
@@ -48,7 +49,6 @@ def run_eval_loop(
                     displacement=phonon_displacement,
                     supercell=phonon_supercell,
                     qpoint_mesh=phonon_mesh,
-                    verbose=False,
                 )
                 ref_phonon_freq = get_mesh_min_frequency(phonons)
 
@@ -62,9 +62,14 @@ def run_eval_loop(
                 min_phonon_freq=ref_phonon_freq,
             )
         except Exception as e:
-            err_console.print(
-                f"[red]Failed to evaluate structure {rec['id']}: {e}[/red]"
-            )
+            import traceback
+
+            err_msg = f"Failed to evaluate structure {rec['id']}: {e}"
+            if log_callback:
+                log_callback(err_msg)
+                log_callback(traceback.format_exc())
+            else:
+                err_console.print(f"[red]{err_msg}[/red]")
 
         if progress_callback:
             progress_callback(i, n_total, f"Evaluated {i}/{n_total}")

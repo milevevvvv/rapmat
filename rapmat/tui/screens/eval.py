@@ -211,7 +211,13 @@ class EvalScreen:
             records = records[:top_n]
 
         self._records = records
-        config_json = json.dumps({}, sort_keys=True)
+        config_dict = {"run_phonons": run_phonons}
+        if run_phonons:
+            config_dict["phonon_supercell"] = vals.get("phonon_supercell", (3, 3, 3))
+            config_dict["phonon_mesh"] = vals.get("phonon_mesh", (20, 20, 20))
+            config_dict["phonon_displacement"] = vals.get("phonon_displacement", 1e-2)
+            
+        config_json = json.dumps(config_dict, sort_keys=True)
 
         pending = [
             r
@@ -250,10 +256,11 @@ class EvalScreen:
                     phonon_supercell=vals.get("phonon_supercell", (3, 3, 3)),
                     phonon_mesh=vals.get("phonon_mesh", (20, 20, 20)),
                     progress_callback=_cb,
+                    log_callback=progress.log,
                 )
 
         evals = store.get_evaluations(run_name, calculator=calculator_name)
-        eval_map = {ev["structure_id"]: ev for ev in evals}
+        eval_map = {ev["structure_id"]: ev for ev in evals if ev.get("config_json") == config_json}
 
         comparison = []
         for rec in records:
