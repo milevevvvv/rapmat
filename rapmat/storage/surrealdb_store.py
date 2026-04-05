@@ -331,6 +331,11 @@ class SurrealDBStore(StructureStore):
             {"cfg": json.dumps(config)},
         )
 
+    def delete_run(self, run_name: str) -> None:
+        """Permanently delete a run and all associated structures."""
+        self._db.query(f"DELETE structure WHERE run = {_record_id('run', run_name)}")
+        self._db.query(f"DELETE {_record_id('run', run_name)}")
+
     def list_runs(self) -> List[dict]:
         # For listing, we do a basic fetch without full config merges to be fast
         rows = _as_rows(self._db.query("SELECT * FROM run"))

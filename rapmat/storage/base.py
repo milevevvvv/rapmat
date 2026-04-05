@@ -96,6 +96,11 @@ class StructureStore(ABC):
         ...
 
     @abstractmethod
+    def delete_run(self, run_name: str) -> None:
+        """Permanently delete a run and all its associated structures."""
+        ...
+
+    @abstractmethod
     def list_runs(self) -> List[dict]: ...
 
     @abstractmethod
