@@ -99,8 +99,6 @@ class PhononDispersionScreen:
         listbox = urwid.ListBox(
             urwid.SimpleListWalker(
                 [
-                    urwid.Text(("section", " Phonon Dispersion"), align="left"),
-                    urwid.Divider("─"),
                     self._form,
                     urwid.Divider(),
                     urwid.Columns([(20, start_btn)], dividechars=1),
