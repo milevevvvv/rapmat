@@ -96,6 +96,11 @@ class StructureStore(ABC):
         ...
 
     @abstractmethod
+    def delete_run(self, run_name: str) -> None:
+        """Permanently delete a run and all its associated structures."""
+        ...
+
+    @abstractmethod
     def list_runs(self) -> List[dict]: ...
 
     @abstractmethod
@@ -218,6 +223,11 @@ class StructureStore(ABC):
     @abstractmethod
     def update_study(self, study_id: str, fields: dict) -> None:
         """Update fields on a study record (e.g. config)."""
+        ...
+
+    @abstractmethod
+    def delete_study(self, study_id: str) -> None:
+        """Permanently delete a study and all its associated runs and structures."""
         ...
 
     @abstractmethod

@@ -78,8 +78,9 @@ class StudyListScreen:
     # ------------------------------------------------------------------ #
 
     def build(self) -> urwid.Widget:
+        self._widget = urwid.WidgetPlaceholder(urwid.SolidFill())
         self._state.refresh_studies_if_needed()
-        self._widget = self._build_widget()
+        self._widget.original_widget = self._build_widget()
         self._update_footer()
         return self._widget
 
@@ -94,11 +95,12 @@ class StudyListScreen:
         if self._state.status_bar:
             self._state.status_bar.set_keys(
                 [
-                    ("Enter", "Open"),
-                    ("n", "New"),
-                    ("/", "Search"),
-                    ("s", "Sort"),
-                    ("Esc", "Back"),
+                    (" Enter", "Open"),
+                    (" n", "New"),
+                    (" /", "Search"),
+                    (" s", "Sort"),
+                    (" Del", "Remove"),
+                    (" Esc", "Back"),
                 ]
             )
             self._state.status_bar.clear_message()
@@ -244,4 +246,43 @@ class StudyListScreen:
             if self._table:
                 self._table.sort_by(self._sort_col)
             return None
+        if key == "delete":
+            if self._table is not None:
+                study = self._table.get_focused_row()
+                if study:
+                    self._open_delete_modal(study["study_id"])
+            return None
         return key
+
+    def _open_delete_modal(self, study_id: str) -> None:
+        if self._widget is None:
+            return
+
+        from rapmat.tui.widgets.dialog import ModalDialog
+
+        current_body = self._widget.original_widget
+
+        def _on_close(confirmed: bool) -> None:
+            if self._widget is not None:
+                self._widget.original_widget = current_body
+                if confirmed:
+                    self._state.store.delete_study(study_id)
+                    self._state.invalidate_studies()
+                    self._state.refresh_studies_if_needed()
+                    self._all_rows = _enrich_studies(self._state)
+                    if self._table is not None:
+                        self._table.set_data(self._all_rows)
+                        self._on_study_focus_change(self._table.get_focused_row())
+
+        dlg = ModalDialog.confirm(
+            title="Delete Study",
+            message=(
+                f"Are you sure you want to permanently delete study '{study_id}'?\n\n"
+                "This will recursively remove:\n"
+                " - All runs belonging to this study\n"
+                " - All structures belonging to those runs"
+            ),
+            parent=current_body,
+            on_close=_on_close,
+        )
+        self._widget.original_widget = dlg

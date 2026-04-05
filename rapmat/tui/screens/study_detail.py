@@ -76,6 +76,7 @@ class StudyDetailScreen:
                     ("n", "New Run"),
                     ("h", "Phase Analysis"),
                     ("d", "Dedup"),
+                    ("Del", "Remove"),
                     ("Esc", "Back"),
                 ]
             )
@@ -250,6 +251,29 @@ class StudyDetailScreen:
         if self._placeholder:
             self._placeholder.original_widget = self._build_widget()
 
+    def _open_delete_modal(self, run_name: str) -> None:
+        if self._placeholder is None:
+            return
+
+        from rapmat.tui.widgets.dialog import ModalDialog
+
+        current_body = self._placeholder.original_widget
+
+        def _on_close(confirmed: bool) -> None:
+            if self._placeholder is not None:
+                self._placeholder.original_widget = current_body
+                if confirmed:
+                    self._state.store.delete_run(run_name)
+                    self._placeholder.original_widget = self._build_widget()
+
+        dlg = ModalDialog.confirm(
+            title="Delete Run",
+            message=f"Are you sure you want to permanently delete run '{run_name}' and all its structures?",
+            parent=current_body,
+            on_close=_on_close,
+        )
+        self._placeholder.original_widget = dlg
+
     def keypress(self, size: tuple, key: str) -> str | None:
         if key == "esc":
             self._router.pop()
@@ -286,5 +310,11 @@ class StudyDetailScreen:
                     from rapmat.tui.screens.dedup import DedupScreen
 
                     self._router.push(DedupScreen(self._state, self._router))
+            return None
+        if key == "delete":
+            if self._table is not None:
+                run = self._table.get_focused_row()
+                if run:
+                    self._open_delete_modal(run["name"])
             return None
         return key
