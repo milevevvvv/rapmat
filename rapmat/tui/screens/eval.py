@@ -33,6 +33,8 @@ _RESULT_COLS = [
     ("MLIP eV/at", 12),
     ("Ref eV/at", 12),
     ("Diff", 10),
+    ("MLIP Dyn", 10),
+    ("Ref Dyn", 10),
 ]
 
 
@@ -333,6 +335,11 @@ class EvalScreen:
             ("details", "\n".join(lines) if lines else "No metrics available")
         )
 
+        def _fmt_dyn(val: float | None) -> str:
+            if val is None:
+                return "N/A"
+            return "Yes" if val >= phonon_cutoff else "No"
+
         table = SortableTable(
             columns=_RESULT_COLS,
             row_data=self._comparison,
@@ -342,6 +349,8 @@ class EvalScreen:
                 f"{c['mlip_epa']:.4f}",
                 f"{c['ref_epa']:.4f}",
                 f"{c['ref_epa'] - c['mlip_epa']:+.4f}",
+                _fmt_dyn(c.get("mlip_phonon_freq")),
+                _fmt_dyn(c.get("ref_phonon_freq")),
             ],
         )
 
