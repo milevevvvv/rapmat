@@ -29,6 +29,7 @@ class ResultsScreen(BaseResultsScreen):
             ("/", "Search"),
             ("s", "Save"),
             ("p", "Phonons"),
+            ("v", "Evaluation"),
             ("Esc", "Back"),
         ]
         self._state.status_bar.set_keys(keys)
@@ -164,8 +165,10 @@ class ResultsScreen(BaseResultsScreen):
 
     def keypress(self, size: tuple, key: str) -> str | None:
         # Capital S also saves (base only binds lowercase s)
-        if key == "S":
-            self._action_save()
+        if key == "v":
+            from rapmat.tui.screens.eval import EvalScreen
+
+            self._router.push(EvalScreen(self._state, self._router))
             return None
         return super().keypress(size, key)
 
