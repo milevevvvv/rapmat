@@ -1406,6 +1406,17 @@ class SurrealDBStore(StructureStore):
         )
         return len(rows) > 0
 
+    def clear_evaluations(
+        self,
+        run_name: str,
+        calculator: Optional[str] = None,
+    ) -> None:
+        """Delete evaluation records for a run, optionally filtered by calculator."""
+        where = f"run = {_record_id('run', run_name)}"
+        if calculator is not None:
+            where += f" AND calculator = '{calculator}'"
+        self._db.query(f"DELETE evaluation WHERE {where}")
+
     def get_evaluations(
         self,
         run_name: str,

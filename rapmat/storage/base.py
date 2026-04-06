@@ -251,6 +251,13 @@ class StructureStore(ABC):
     ) -> str: ...
 
     @abstractmethod
+    def clear_evaluations(
+        self, run_name: str, calculator: Optional[str] = None
+    ) -> None:
+        """Delete evaluation records for a specific run (and optionally calculator)."""
+        ...
+
+    @abstractmethod
     def has_evaluation(
         self, structure_id: str, calculator: str, config_json: str
     ) -> bool: ...

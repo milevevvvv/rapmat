@@ -132,13 +132,19 @@ class EvalScreen:
             "menu_item",
             focus_map="btn_focus",
         )
+        
+        clear_btn = urwid.AttrMap(
+            urwid.Button("Clear Cache [Del]", on_press=self._on_clear_cache),
+            "menu_item",
+            focus_map="btn_focus",
+        )
 
         listbox_form = urwid.ListBox(
             urwid.SimpleListWalker(
                 [
                     self._form,
                     urwid.Divider(),
-                    urwid.Columns([(18, start_btn)], dividechars=1),
+                    urwid.Columns([(18, start_btn), (22, clear_btn)], dividechars=1),
                     self._error_text,
                 ]
             )
@@ -163,8 +169,36 @@ class EvalScreen:
         return urwid.Frame(body=body)
 
     # ------------------------------------------------------------------ #
-    #  Submit
+    #  Submit & Actions
     # ------------------------------------------------------------------ #
+
+    def _on_clear_cache(self, _btn=None) -> None:
+        if self._running or self._form is None:
+            return
+
+        vals = self._form.get_values()
+        run_name = vals["run_name"]
+
+        if not run_name:
+            return
+
+        from rapmat.tui.widgets.dialog import ModalDialog
+
+        def _execute_clear():
+            self._state.store.clear_evaluations(run_name)
+            self._error_text.set_text(("success", f"Cache cleared for run '{run_name}'"))
+            self._results_pile.contents[:] = []
+            self._update_footer()
+            self._router.pop()
+
+        dialog = ModalDialog.confirm(
+            f"Are you sure you want to clear the evaluation cache for ALL structures in the run '{run_name}'?\n\n"
+            "This will permanently delete stored high-fidelity energies and phonons "
+            "for every single calculator used on this run.",
+            _execute_clear,
+            self._router.pop,
+        )
+        self._router.push(dialog)
 
     def _on_start(self, _btn=None) -> None:
         if self._running:
@@ -412,6 +446,9 @@ class EvalScreen:
     # ------------------------------------------------------------------ #
 
     def keypress(self, size: tuple, key: str) -> str | None:
+        if key == "delete":
+            self._on_clear_cache()
+            return None
         if key == "f5":
             self._on_start()
             return None
