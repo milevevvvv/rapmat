@@ -11,6 +11,7 @@ from rapmat.tui.widgets.form import (
     dropdown_field,
     float_field,
     int_field,
+    text_field,
     tuple_field,
 )
 from rapmat.tui.widgets.progress import ProgressPanel
@@ -107,6 +108,9 @@ class EvalScreen:
                 dropdown_field(
                     "calculator", "Ref calculator", _calc_options(), default=0
                 ),
+                text_field(
+                    "calculator_config", "Config TOML Path", default=""
+                ),
                 int_field("top_n", "Top N (0=all)", default=0),
                 checkbox_field("run_phonons", "Run phonons", default=False),
                 checkbox_field("stable_only", "Dyn. stable only (tau)", default=False),
@@ -172,6 +176,31 @@ class EvalScreen:
         self._results_pile.contents[:] = []
 
         vals = self._form.get_values()
+        
+        calc_config_dict = {}
+        calc_config_path = vals.get("calculator_config", "").strip()
+        if calc_config_path:
+            import tomllib
+            from pathlib import Path
+
+            config_file = Path(calc_config_path)
+            if not config_file.is_file():
+                self._error_text.set_text(
+                    ("form_error", f"Config file not found: {calc_config_path}")
+                )
+                self._running = False
+                return
+            try:
+                with open(config_file, "rb") as f:
+                    calc_config_dict = tomllib.load(f)
+            except Exception as e:
+                self._error_text.set_text(
+                    ("form_error", f"Invalid TOML in config: {e}")
+                )
+                self._running = False
+                return
+
+        vals["calculator_config_dict"] = calc_config_dict
 
         from rapmat.tui.tasks import BackgroundTask
 
@@ -214,6 +243,7 @@ class EvalScreen:
 
         self._records = records
         config_dict = {"run_phonons": run_phonons}
+        config_dict["calculator_config"] = vals.get("calculator_config_dict", {})
         if run_phonons:
             config_dict["phonon_supercell"] = vals.get("phonon_supercell", (3, 3, 3))
             config_dict["phonon_mesh"] = vals.get("phonon_mesh", (20, 20, 20))
@@ -235,7 +265,7 @@ class EvalScreen:
                 calculator = load_calculator(
                     Calculators(calculator_name),
                     wdir,
-                    config={},
+                    config=vals.get("calculator_config_dict", {}),
                     callback=_TaskCalcCallback(),
                 )
 
