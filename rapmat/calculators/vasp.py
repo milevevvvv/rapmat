@@ -13,5 +13,5 @@ def build_calculator_vasp(config: dict, directory: Path | None = None) -> Vasp:
     """
     kwargs = dict(config)
     if directory is not None:
-        kwargs.setdefault("directory", str(directory))
+        kwargs["directory"] = str(directory)
     return Vasp(**kwargs)
