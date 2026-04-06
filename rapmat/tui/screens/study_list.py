@@ -141,11 +141,6 @@ class StudyListScreen:
 
         body = urwid.Pile(
             [
-                (
-                    "pack",
-                    urwid.Text(("section", " Phase Diagram Studies"), align="left"),
-                ),
-                ("pack", urwid.Divider("─")),
                 ("weight", 1, self._table),
                 ("pack", urwid.Divider()),
                 ("pack", self._details_panel),
