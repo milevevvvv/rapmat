@@ -54,6 +54,7 @@ class EvalScreen:
         self._router = router
         self._frame: urwid.Frame | None = None
         self._main_body: urwid.Widget | None = None
+        self._widget: urwid.WidgetPlaceholder | None = None
         self._progress_panel = ProgressPanel(title=" Evaluation Progress ")
         self._task: BackgroundTask | None = None
         self._running = False
@@ -166,14 +167,16 @@ class EvalScreen:
         self._main_body = body
 
         self._update_footer()
-        return urwid.Frame(body=body)
+        
+        self._widget = urwid.WidgetPlaceholder(urwid.Frame(body=body))
+        return self._widget
 
     # ------------------------------------------------------------------ #
     #  Submit & Actions
     # ------------------------------------------------------------------ #
 
     def _on_clear_cache(self, _btn=None) -> None:
-        if self._running or self._form is None:
+        if self._running or self._form is None or self._widget is None:
             return
 
         vals = self._form.get_values()
@@ -184,8 +187,10 @@ class EvalScreen:
 
         from rapmat.tui.widgets.dialog import ModalDialog
 
+        current_body = self._widget.original_widget
+
         def _on_close(confirmed: bool) -> None:
-            self._router.pop()
+            self._widget.original_widget = current_body
             if confirmed:
                 self._state.store.clear_evaluations(run_name)
                 self._error_text.set_text(("success", f"Cache cleared for run '{run_name}'"))
@@ -199,10 +204,10 @@ class EvalScreen:
                 "This will permanently delete stored high-fidelity energies and phonons "
                 "for every single calculator used on this run."
             ),
-            parent=self._main_body,
+            parent=current_body,
             on_close=_on_close,
         )
-        self._router.push(dialog)
+        self._widget.original_widget = dialog
 
     def _on_start(self, _btn=None) -> None:
         if self._running:
