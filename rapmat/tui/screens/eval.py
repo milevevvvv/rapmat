@@ -232,6 +232,12 @@ class EvalScreen:
 
         progress.log(f"Loading structures for '{run_name}'...")
         records = store.get_run_structures(run_name, status="relaxed")
+        
+        initial_count = len(records)
+        records = [r for r in records if r.get("converged", False)]
+        if len(records) < initial_count:
+            progress.log(f"Excluded {initial_count - len(records)} unconverged structures")
+
         records.sort(key=lambda r: r["energy_per_atom"])
 
         if not records:
