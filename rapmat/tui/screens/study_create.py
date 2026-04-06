@@ -111,13 +111,6 @@ class StudyCreateScreen:
 
         body = urwid.Pile(
             [
-                (
-                    "pack",
-                    urwid.Text(
-                        ("section", " Create Phase Diagram Study"), align="left"
-                    ),
-                ),
-                ("pack", urwid.Divider("─")),
                 ("pack", urwid.Divider()),
                 ("pack", self._form),
                 ("pack", urwid.Divider()),
