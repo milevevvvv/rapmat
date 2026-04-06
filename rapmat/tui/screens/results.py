@@ -178,7 +178,7 @@ class ResultsScreen(BaseResultsScreen):
             # Pass only the IDs currently surviving the user's active UI filters 
             # (Thickness, Non-converged, Duplicates)
             display_results = list(self._get_display_results())
-            filtered_ids = [r["id"] for r in display_results]
+            filtered_ids = [r["structure_id"] for r in display_results]
 
             self._router.push(EvalScreen(self._state, self._router, self._run_name, filtered_ids))
             return None
