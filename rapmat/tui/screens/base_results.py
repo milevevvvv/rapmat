@@ -310,7 +310,9 @@ class BaseResultsScreen:
                 atoms = self._structures[idx]
                 cell_lengths = atoms.get_cell().lengths()
 
-                markup.append(("details_title", f"ID: {result.get('id', idx + 1)}\n"))
+                markup.append(("details_title", f"#: {result.get('id', idx + 1)}\n"))
+                if result.get("structure_id"):
+                    markup.append(("details_title", f"ID: {result.get('structure_id')}\n"))
                 if result.get('run_name'):
                     markup.append(("details_title", f"Run: {result.get('run_name')}\n"))
                 markup.append(("details", f"Formula: {atoms.get_chemical_formula()}\n"))

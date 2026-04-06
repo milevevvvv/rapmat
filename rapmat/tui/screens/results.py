@@ -103,10 +103,10 @@ class ResultsScreen(BaseResultsScreen):
 
     def _columns_def(self) -> list[tuple[str, int]]:
         cols = [
-            ("ID", 6),
+            ("#", 4),
+            ("ID", 10),
             ("Formula", 14),
-            ("Init SG", 12),
-            ("Final SG", 12),
+            ("Final SG", 14),
             ("E/atom", 10),
         ]
         if self._pressure_gpa > 0:
@@ -115,17 +115,24 @@ class ResultsScreen(BaseResultsScreen):
         if self._show_thickness:
             cols.append(("Thick(A)", 9))
         if self._show_dynamical_stability:
-            cols.append(("Dyn.stable", 11))
+            cols.append(("Dyn.", 4))
         if self._show_duplicate_col:
             cols.append(("Dup", 5))
         cols.append(("Status", 8))
         return cols
 
     def _format_row(self, result: dict) -> list[str]:
+        # Handle cases where structure_id might be long/prefixed.
+        # Use the rightmost 10 chars for a cleaner display.
+        full_id = str(result.get("structure_id", "N/A"))
+        short_id = full_id.split("/")[-1] if "/" in full_id else full_id
+        if len(short_id) > 10:
+            short_id = short_id[:10]
+
         row = [
             str(result.get("id", "?")),
+            short_id,
             str(result.get("formula", "N/A")),
-            str(result.get("initial_spg", "N/A")),
             str(result.get("final_spg", "N/A")),
             f"{result.get('energy_per_atom', result.get('effective_per_atom', 0.0)):.4f}",
         ]
