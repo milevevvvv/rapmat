@@ -33,9 +33,14 @@ def run_eval_loop(
     from rapmat.core.phonon import get_mesh_min_frequency, structure_calculate_phonons
     from rapmat.utils.console import err_console
 
+    from rapmat.calculators import cleanup_calculator_files
+    
     n_total = len(pending)
     for i, rec in enumerate(pending, 1):
         atoms = rec["atoms"].copy()
+        
+        cleanup_calculator_files(calculator)
+        
         atoms.calc = calculator
 
         try:

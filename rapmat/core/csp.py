@@ -121,6 +121,9 @@ def run_processing_loop(
 
             for attempt in range(3):
                 structure = candidate["atoms"].copy()
+                from rapmat.calculators import cleanup_calculator_files
+                cleanup_calculator_files(calculator)
+                
                 try:
                     structure.calc = calculator
                     structure.info["initial_spg"] = format_spg(
