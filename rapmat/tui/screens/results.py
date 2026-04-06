@@ -175,7 +175,7 @@ class ResultsScreen(BaseResultsScreen):
         if key == "v":
             from rapmat.tui.screens.eval import EvalScreen
 
-            self._router.push(EvalScreen(self._state, self._router))
+            self._router.push(EvalScreen(self._state, self._router, self._run_name))
             return None
         return super().keypress(size, key)
 

@@ -46,12 +46,12 @@ class EvalScreen:
 
     @property
     def breadcrumb_title(self) -> str:
-        run = self._state.active_run
-        return f"Evaluation: {run}" if run else self.title
+        return f"Evaluation: {self._run_name}" if self._run_name else self.title
 
-    def __init__(self, state: "AppState", router: "ScreenRouter") -> None:
+    def __init__(self, state: "AppState", router: "ScreenRouter", run_name: str) -> None:
         self._state = state
         self._router = router
+        self._run_name = run_name
         self._frame: urwid.Frame | None = None
         self._main_body: urwid.Widget | None = None
         self._widget: urwid.WidgetPlaceholder | None = None
@@ -91,21 +91,9 @@ class EvalScreen:
     #  Layout
     # ------------------------------------------------------------------ #
 
-    def _run_options(self) -> list[str]:
-        names = [r.get("name", "") for r in self._state.runs_cache]
-        if self._state.active_run and self._state.active_run not in names:
-            names.insert(0, self._state.active_run)
-        return names if names else ["(no runs)"]
-
     def _build_frame(self) -> urwid.Frame:
-        run_opts = self._run_options()
-        default_idx = 0
-        if self._state.active_run and self._state.active_run in run_opts:
-            default_idx = run_opts.index(self._state.active_run)
-
         self._form = FormGroup(
             [
-                dropdown_field("run_name", "Run", run_opts, default=default_idx),
                 dropdown_field(
                     "calculator", "Ref calculator", _calc_options(), default=0
                 ),
@@ -180,9 +168,10 @@ class EvalScreen:
             return
 
         vals = self._form.get_values()
-        run_name = vals["run_name"]
+        run_name = self._run_name
 
         if not run_name:
+            self._error_text.set_text(("form_error", "No active run selected"))
             return
 
         from rapmat.tui.widgets.dialog import ModalDialog
@@ -219,6 +208,14 @@ class EvalScreen:
         self._results_pile.contents[:] = []
 
         vals = self._form.get_values()
+        
+        run_name = self._run_name
+        if not run_name:
+            self._error_text.set_text(("form_error", "No active run selected"))
+            self._running = False
+            return
+            
+        vals["run_name"] = run_name
         
         calc_config_dict = {}
         calc_config_path = vals.get("calculator_config", "").strip()
