@@ -33,9 +33,23 @@ class TaskProgress:
             self.message = message
 
     def log(self, message: str) -> None:
-        """Append a log line from the worker thread."""
+        """Append a log line from the worker thread and echo to physical log file."""
         with self._lock:
             self.log_lines.append(message)
+            
+        try:
+            from datetime import datetime
+            from rapmat.config import APP_DATA_DIR
+
+            log_dir = APP_DATA_DIR / "logs"
+            log_dir.mkdir(parents=True, exist_ok=True)
+            log_file = log_dir / "background.log"
+
+            with open(log_file, "a", encoding="utf-8") as f:
+                ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                f.write(f"[{ts}] {message}\n")
+        except Exception:
+            pass
 
     def finish(self) -> None:
         """Mark the task as successfully completed."""
