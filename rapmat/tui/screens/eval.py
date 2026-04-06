@@ -48,10 +48,11 @@ class EvalScreen:
     def breadcrumb_title(self) -> str:
         return f"Evaluation: {self._run_name}" if self._run_name else self.title
 
-    def __init__(self, state: "AppState", router: "ScreenRouter", run_name: str) -> None:
+    def __init__(self, state: "AppState", router: "ScreenRouter", run_name: str, filtered_ids: list[str] | None = None) -> None:
         self._state = state
         self._router = router
         self._run_name = run_name
+        self._filtered_ids = filtered_ids
         self._frame: urwid.Frame | None = None
         self._main_body: urwid.Widget | None = None
         self._widget: urwid.WidgetPlaceholder | None = None
@@ -274,8 +275,13 @@ class EvalScreen:
         records = store.get_run_structures(run_name, status="relaxed")
         
         initial_count = len(records)
-        records = [r for r in records if r.get("converged", False)]
-        if len(records) < initial_count:
+        
+        if self._filtered_ids is not None:
+            valid_ids = set(self._filtered_ids)
+            records = [r for r in records if r["id"] in valid_ids]
+            progress.log(f"Excluded {initial_count - len(records)} structures hidden by Results filters")
+        else:
+            records = [r for r in records if r.get("converged", False)]
             progress.log(f"Excluded {initial_count - len(records)} unconverged structures")
 
         records.sort(key=lambda r: r["energy_per_atom"])

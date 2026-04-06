@@ -77,7 +77,6 @@ class StudyDetailScreen:
                     ("h", "Phase Analysis"),
                     ("d", "Dedup"),
                     ("Del", "Remove"),
-                    ("v", "Evaluation"),
                     ("Esc", "Back"),
                 ]
             )
@@ -315,16 +314,4 @@ class StudyDetailScreen:
         if key == "delete":
             if self._table is not None:
                 run = self._table.get_focused_row()
-                if run:
-                    self._open_delete_modal(run["name"])
-            return None
-        if key in ("v", "V"):
-            if self._table is not None:
-                run = self._table.get_focused_row()
-                if run:
-                    self._state.active_run = run["name"]
-                    from rapmat.tui.screens.eval import EvalScreen
-
-                    self._router.push(EvalScreen(self._state, self._router, run["name"]))
-            return None
         return key

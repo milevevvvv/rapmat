@@ -174,8 +174,13 @@ class ResultsScreen(BaseResultsScreen):
         # Capital S also saves (base only binds lowercase s)
         if key == "v":
             from rapmat.tui.screens.eval import EvalScreen
+            
+            # Pass only the IDs currently surviving the user's active UI filters 
+            # (Thickness, Non-converged, Duplicates)
+            display_results = list(self._get_display_results())
+            filtered_ids = [r["id"] for r in display_results]
 
-            self._router.push(EvalScreen(self._state, self._router, self._run_name))
+            self._router.push(EvalScreen(self._state, self._router, self._run_name, filtered_ids))
             return None
         return super().keypress(size, key)
 
