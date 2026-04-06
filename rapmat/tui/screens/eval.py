@@ -184,19 +184,23 @@ class EvalScreen:
 
         from rapmat.tui.widgets.dialog import ModalDialog
 
-        def _execute_clear():
-            self._state.store.clear_evaluations(run_name)
-            self._error_text.set_text(("success", f"Cache cleared for run '{run_name}'"))
-            self._results_pile.contents[:] = []
-            self._update_footer()
+        def _on_close(confirmed: bool) -> None:
             self._router.pop()
+            if confirmed:
+                self._state.store.clear_evaluations(run_name)
+                self._error_text.set_text(("success", f"Cache cleared for run '{run_name}'"))
+                self._results_pile.contents[:] = []
+                self._update_footer()
 
         dialog = ModalDialog.confirm(
-            f"Are you sure you want to clear the evaluation cache for ALL structures in the run '{run_name}'?\n\n"
-            "This will permanently delete stored high-fidelity energies and phonons "
-            "for every single calculator used on this run.",
-            _execute_clear,
-            self._router.pop,
+            title="Clear Reference Cache",
+            message=(
+                f"Are you sure you want to clear the evaluation cache for ALL structures in the run '{run_name}'?\n\n"
+                "This will permanently delete stored high-fidelity energies and phonons "
+                "for every single calculator used on this run."
+            ),
+            parent=self._main_body,
+            on_close=_on_close,
         )
         self._router.push(dialog)
 
