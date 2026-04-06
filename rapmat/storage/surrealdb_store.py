@@ -7,6 +7,7 @@ Connection modes supported via the sync Python SDK:
 """
 
 import json
+import threading
 from datetime import datetime
 from pathlib import Path
 from typing import List, Optional, Tuple
@@ -143,6 +144,16 @@ class SurrealDBStore(StructureStore):
         self._db_url = db_url
         self._console = console
         self._db = Surreal(db_url)
+        self._query_lock = threading.RLock()
+
+        # Wrap the connection query method to ensure thread safety over the unified websocket
+        original_query = self._db.query
+
+        def _threadsafe_query(*args, **kwargs):
+            with self._query_lock:
+                return original_query(*args, **kwargs)
+
+        self._db.query = _threadsafe_query
         self._active_vec_col: str | None = None
 
         if username is not None and password is not None:
