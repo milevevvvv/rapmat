@@ -401,7 +401,14 @@ class CSPSearchScreen:
                         descriptor=descriptor,
                         workers=workers,
                         progress_callback=_cb,
+                        cancel_flag=cancel_flag,
+                        log_callback=progress.log,
                     )
+                    
+                    if progress.cancelled or cancel_flag[0]:
+                        raise KeyboardInterrupt("Cancelled by user")
+                    
+                    progress.log("Generation complete. Initializing calculator for processing...")
                     store.set_run_status(run_name, "processing")
 
                     def _proc_cb(current, total, msg, is_log=True):
