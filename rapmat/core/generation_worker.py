@@ -33,6 +33,7 @@ def generate_one_structure(
     search_dim: int,
     thickness_cutoff: float | None,
     seed: int | None = None,
+    max_count: int = 10,
 ) -> tuple:
     """Pure CPU work: pyxtal generation + SOAP compute.
 
@@ -43,6 +44,10 @@ def generate_one_structure(
     seed
         If provided, passed as ``random_state`` to PyXtal's
         ``from_random()`` for reproducible generation.
+    max_count
+        Maximum number of internal PyXtal placement attempts per structure.
+        Lower values prevent hangs on difficult space groups at the cost of
+        a slightly higher discard rate.  Default ``10``.
     """
     import pyxtal
 
@@ -56,7 +61,7 @@ def generate_one_structure(
             group=spg,
             species=elements,
             numIons=elements_number,
-            max_count=1000,
+            max_count=max_count,
             thickness=thickness_cutoff if search_dim == 2 else None,
             random_state=seed,
         )

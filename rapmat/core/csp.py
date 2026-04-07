@@ -389,6 +389,8 @@ def run_generation_loop(
     descriptor=None,
     workers: int = 1,
     progress_callback=None,
+    cancel_flag: list[bool] | None = None,
+    log_callback=None,
 ) -> int:
     """Generate structures from DB placeholders (status='generating').
 
@@ -402,6 +404,7 @@ def run_generation_loop(
     formula = config.get("formula", {})
     thickness_cutoff = config.get("thickness_cutoff", None)
     run_seed = config.get("seed")  # int | None
+    max_count = int(config.get("max_count", 10))
 
     elements = list(formula.keys())
     formula_values = list(formula.values())
@@ -419,6 +422,9 @@ def run_generation_loop(
             f"Found [bold]{n_placeholders}[/bold] placeholders to generate."
         )
 
+    if log_callback:
+        log_callback(f"PyXtal max_count={max_count}, workers={workers}")
+
     generated = 0
     discarded = 0
     errors = 0
@@ -430,6 +436,13 @@ def run_generation_loop(
                 n_placeholders,
                 f"Generating {counter}/{n_placeholders}",
             )
+
+    def _log(msg: str) -> None:
+        if log_callback:
+            log_callback(msg)
+
+    def _is_cancelled() -> bool:
+        return cancel_flag is not None and cancel_flag[0]
 
     def _handle_result(status, struct_id, atoms, vec, spg, fu):
         nonlocal generated, discarded, errors
@@ -450,17 +463,23 @@ def run_generation_loop(
         _gw._worker_descriptor = descriptor
 
         for counter, ph in enumerate(placeholders, start=1):
+            if _is_cancelled():
+                _log("Generation cancelled by user")
+                break
+
             if worker_id and counter % 20 == 0:
                 store.update_heartbeat(run_name, worker_id)
 
             spg = ph["gen_spg"]
             fu = ph["gen_fu"]
+            _log(f"[{counter}/{n_placeholders}] spg={spg} fu={fu}")
             struct_seed = (
                 (run_seed + counter) % (2**32) if run_seed is not None else None
             )
             status, struct_id, atoms, vec = _generate_one_structure(
                 ph["id"], spg, fu, elements, formula_values, search_dim, None,
                 seed=struct_seed,
+                max_count=max_count,
             )
             _handle_result(status, struct_id, atoms, vec, spg, fu)
             _advance(counter)
@@ -498,11 +517,18 @@ def run_generation_loop(
                         if run_seed is not None
                         else None
                     ),
+                    max_count=max_count,
                 ): ph
                 for idx, ph in enumerate(placeholders, start=1)
             }
 
             for counter, future in enumerate(as_completed(futures), start=1):
+                if _is_cancelled():
+                    _log("Generation cancelled — cancelling pending futures...")
+                    for f in futures:
+                        f.cancel()
+                    break
+
                 if worker_id and counter % 20 == 0:
                     store.update_heartbeat(run_name, worker_id)
 
@@ -511,4 +537,9 @@ def run_generation_loop(
                 _handle_result(status, struct_id, atoms, vec, ph["gen_spg"], ph["gen_fu"])
                 _advance(counter)
 
+                if counter % 100 == 0:
+                    _log(f"Generated {counter}/{n_placeholders} (ok={generated}, disc={discarded}, err={errors})")
+
+    _log(f"Generation finished: {generated} ok, {discarded} discarded, {errors} errors")
     return generated
+
