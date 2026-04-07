@@ -200,8 +200,9 @@ class CSPResumeScreen:
         try:
             with workdir_context(None) as workdir_path:
                 progress.log(f"Working directory: {workdir_path}")
-                if original_status == "generating":
-                    progress.log("Finishing generation phase...")
+                pending_gen = store.get_pending_generation(run_name)
+                if pending_gen:
+                    progress.log(f"Finishing generation phase ({len(pending_gen)} placeholders remaining)...")
                     store.set_run_status(run_name, "generating")
                     run_generation_loop(
                         run_name=run_name,
