@@ -11,6 +11,8 @@ Rapid materials discovery using machine learning interatomic potentials (MLIPs) 
 
 ## Installation
 
+Linux systems recommended.
+
 Install `pytorch<2.10.0` with CUDA support if you have an NVIDIA GPU; otherwise skip this step:
 
 ```bash
