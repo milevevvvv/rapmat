@@ -254,6 +254,12 @@ class StudyDetailScreen:
     def _open_delete_modal(self, run_name: str) -> None:
         if self._placeholder is None:
             return
+            
+        # Check if the run is active
+        run_data = self._state.store.get_run_metadata(run_name)
+        status = run_data.get("run_status") if run_data else "pending"
+        worker_id = run_data.get("worker_id") if run_data else None
+        is_active = worker_id and status in ("generating", "processing")
 
         from rapmat.tui.widgets.dialog import ModalDialog
 
@@ -266,9 +272,13 @@ class StudyDetailScreen:
                     self._state.store.delete_run(run_name)
                     self._placeholder.original_widget = self._build_widget()
 
+        msg = f"Are you sure you want to permanently delete run '{run_name}' and all its structures?"
+        if is_active:
+            msg += "\n\nWARNING: This run appears to be ACTIVE (processed by worker {worker_id[:4]}). Deleting it may cause worker errors."
+
         dlg = ModalDialog.confirm(
             title="Delete Run",
-            message=f"Are you sure you want to permanently delete run '{run_name}' and all its structures?",
+            message=msg,
             parent=current_body,
             on_close=_on_close,
         )
@@ -314,4 +324,7 @@ class StudyDetailScreen:
         if key == "delete":
             if self._table is not None:
                 run = self._table.get_focused_row()
+                if run:
+                    self._open_delete_modal(run["name"])
+            return None
         return key
