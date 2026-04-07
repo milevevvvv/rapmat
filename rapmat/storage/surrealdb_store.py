@@ -394,7 +394,7 @@ class SurrealDBStore(StructureStore):
                 f"UPDATE {_record_id('run', run_name)} SET "
                 "run_status = 'processing', worker_id = $wid, "
                 "heartbeat = $ts "
-                "WHERE run_status IN ['pending', 'generating', 'failed'] "
+                "WHERE run_status IN ['pending', 'generating', 'failed', 'interrupted'] "
                 "OR run_status IS NONE "
                 "RETURN AFTER",
                 {
