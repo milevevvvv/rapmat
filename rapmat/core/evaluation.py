@@ -43,8 +43,6 @@ def run_eval_loop(
         atoms = rec["atoms"].copy()
         
         cleanup_calculator_files(calculator)
-        
-        atoms.calc = calculator
 
         try:
             ref_energy = atoms.get_potential_energy()
@@ -56,6 +54,8 @@ def run_eval_loop(
                     atoms_len_before = len(atoms)
                     atoms = standardize_atoms(atoms, to_primitive=True, symprec=symprec)
                     atoms_len_after = len(atoms)
+
+                    atoms.calc = calculator
 
                     if log_callback:
                         log_callback(f"Reducing {rec['id']}: {atoms_len_before} -> {atoms_len_after} atoms")
