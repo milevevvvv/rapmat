@@ -61,6 +61,8 @@ def structure_calculate_phonons(
     cleanup_calculator_files(atoms.calc)
 
     for phonopy_cell in supercells:
+        cleanup_calculator_files(atoms.calc)
+        
         ase_cell = Atoms(
             symbols=phonopy_cell.symbols,
             positions=phonopy_cell.positions,
