@@ -6,6 +6,7 @@ pure metric computation helpers (``compute_ranking_metrics``,
 """
 
 from typing import Sequence
+from rapmat.utils.structure import standardize_atoms
 
 # ------------------------------------------------------------------ #
 #  Evaluation loop (used by TUI and tests)
@@ -26,6 +27,8 @@ def run_eval_loop(
     phonon_mesh: tuple = (20, 20, 20),
     progress_callback=None,
     log_callback=None,
+    reduce_to_primitive: bool = True,
+    symprec: float = 1e-3
 ) -> None:
     """Evaluate *pending* structures with *calculator* and store results.
 
@@ -49,6 +52,14 @@ def run_eval_loop(
 
             ref_phonon_freq = None
             if run_phonons:
+                if reduce_to_primitive:
+                    atoms_len_before = len(atoms)
+                    atoms = standardize_atoms(atoms, to_primitive=True, symprec=symprec)
+                    atoms_len_after = len(atoms)
+
+                    if log_callback:
+                        log_callback(f"Reducing {rec['id']}: {atoms_len_before} -> {atoms_len_after} atoms")
+
                 phonons = structure_calculate_phonons(
                     atoms,
                     displacement=phonon_displacement,
