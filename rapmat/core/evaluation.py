@@ -43,6 +43,8 @@ def run_eval_loop(
         atoms = rec["atoms"].copy()
         
         cleanup_calculator_files(calculator)
+        
+        atoms.calc = calculator
 
         try:
             ref_energy = atoms.get_potential_energy()
