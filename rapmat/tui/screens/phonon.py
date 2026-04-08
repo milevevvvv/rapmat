@@ -256,6 +256,7 @@ class PhononDispersionScreen:
                 displacement,
                 supercell,
                 qpoint_mesh,
+                progress_callback=progress.update
             )
 
             is_unstable = structure_has_imag_phonon_freq(phonons, imag_cutoff)

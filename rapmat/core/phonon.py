@@ -11,6 +11,7 @@ def structure_calculate_phonons(
     displacement: float,
     supercell: Tuple[int, int, int],
     qpoint_mesh: Tuple[int, int, int],
+    progress_callback=None,
 ) -> Phonopy:
     """Compute phonon properties for an atomic structure via finite displacements.
 
@@ -60,9 +61,14 @@ def structure_calculate_phonons(
     
     cleanup_calculator_files(atoms.calc)
 
+    counter = 0
     for phonopy_cell in supercells:
-        cleanup_calculator_files(atoms.calc)
+        counter += 1
+        if progress_callback:
+            progress_callback(0, 0, f"Processing deformed structure {counter}/{len(supercells)}")
         
+        cleanup_calculator_files(atoms.calc)
+
         ase_cell = Atoms(
             symbols=phonopy_cell.symbols,
             positions=phonopy_cell.positions,

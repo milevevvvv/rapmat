@@ -88,6 +88,7 @@ def compute_dynamical_stability_for_results(
                 displacement=phonon_displacement,
                 supercell=phonon_supercell,
                 qpoint_mesh=phonon_mesh,
+                progress_callback=progress_callback,
             )
             min_freq = get_mesh_min_frequency(phonons)
             result["min_phonon_freq"] = min_freq

@@ -54,6 +54,7 @@ def run_eval_loop(
                     displacement=phonon_displacement,
                     supercell=phonon_supercell,
                     qpoint_mesh=phonon_mesh,
+                    progress_callback=progress_callback,
                 )
                 ref_phonon_freq = get_mesh_min_frequency(phonons)
 
