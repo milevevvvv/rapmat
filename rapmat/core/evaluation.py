@@ -41,6 +41,7 @@ def run_eval_loop(
     n_total = len(pending)
     for i, rec in enumerate(pending, 1):
         atoms = rec["atoms"].copy()
+        atoms.pbc = True  # NOTE: ensure full PBC for calculators like VASP, dirty fix, limit to VASP later
         
         cleanup_calculator_files(calculator)
         
