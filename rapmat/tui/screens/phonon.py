@@ -74,6 +74,7 @@ class PhononDispersionScreen:
             [
                 text_field("structure_file", "Structure file", default=""),
                 dropdown_field("calculator", "Calculator", _calc_options(), default=0),
+                text_field("calculator_config", "Config TOML Path", default=""),
                 tuple_field("supercell", "Supercell", size=3, default=(4, 4, 4)),
                 tuple_field(
                     "qpoint_mesh", "Q-point mesh", size=3, default=(20, 20, 20)
@@ -145,6 +146,28 @@ class PhononDispersionScreen:
             )
             return
 
+        calc_config_dict = {}
+        calc_config_path = vals.get("calculator_config", "").strip()
+        if calc_config_path:
+            import tomllib
+
+            config_file = Path(calc_config_path)
+            if not config_file.is_file():
+                self._error_text.set_text(
+                    ("form_error", f"Config file not found: {calc_config_path}")
+                )
+                return
+            try:
+                with open(config_file, "rb") as f:
+                    calc_config_dict = tomllib.load(f)
+            except Exception as e:
+                self._error_text.set_text(
+                    ("form_error", f"Invalid TOML in config: {e}")
+                )
+                return
+
+        vals["calculator_config_dict"] = calc_config_dict
+
         self._running = True
         self._error_text.set_text("")
         self._summary_text.set_text("")
@@ -202,7 +225,9 @@ class PhononDispersionScreen:
             progress.update(1, 5, "Loading calculator")
             progress.log(f"Loading calculator {calculator_name}...")
             calculator = load_calculator(
-                Calculators(calculator_name), wdir, config={},
+                Calculators(calculator_name),
+                wdir,
+                config=vals.get("calculator_config_dict", {}),
                 callback=_TaskCalcCallback(),
             )
             structure.calc = calculator
