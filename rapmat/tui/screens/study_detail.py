@@ -5,6 +5,7 @@ import urwid
 from rapmat.tui.widgets.table import SortableTable
 from rapmat.tui.router import ScreenRouter
 from rapmat.tui.state import AppState
+from rapmat.tui.widgets.config_grid import build_config_grid
 
 _RUN_COLS = [
     ("Run Name", 28),
@@ -50,7 +51,7 @@ class StudyDetailScreen:
         self._router = router
         self._table: SortableTable | None = None
         self._placeholder: urwid.WidgetPlaceholder | None = None
-        self._details_text: urwid.Text | None = None
+        self._details_content: urwid.WidgetPlaceholder | None = None
         self._details_panel: urwid.Widget | None = None
 
     # ------------------------------------------------------------------ #
@@ -155,13 +156,10 @@ class StudyDetailScreen:
         )
         urwid.connect_signal(self._table, "select", self._on_run_select)
 
-        self._details_text = urwid.Text("", align="left")
-        self._details_panel = urwid.BoxAdapter(
-            urwid.LineBox(
-                urwid.Filler(self._details_text, valign="top"),
-                title="Run Configuration",
-            ),
-            12,
+        self._details_content = urwid.WidgetPlaceholder(urwid.Text("No run selected."))
+        self._details_panel = urwid.LineBox(
+            self._details_content,
+            title="Run Configuration",
         )
 
         # Endpoint completeness check
@@ -213,31 +211,14 @@ class StudyDetailScreen:
     # ------------------------------------------------------------------ #
 
     def _on_run_focus_change(self, run: dict | None) -> None:
-        if self._details_text is None:
+        if getattr(self, "_details_content", None) is None:
             return
             
-        markup: list = []
         if run is None:
-            markup.append(("details", "No run selected.\n"))
+            self._details_content.original_widget = urwid.Text([("details", "No run selected.")])
         else:
             config = run.get("config", {})
-            if not config:
-                markup.append(("details", "No configuration parameters available.\n"))
-            else:
-                for k in sorted(config.keys()):
-                    val = config[k]
-                    if isinstance(val, dict):
-                        import json
-                        try:
-                            val_str = json.dumps(val)
-                        except Exception:
-                            val_str = str(val)
-                    else:
-                        val_str = str(val)
-                    label = str(k).replace("_", " ").title() + ":"
-                    markup.append(("form_label", f"  {label:<22} "))
-                    markup.append(("details", f"{val_str}\n"))
-        self._details_text.set_text(markup)
+            self._details_content.original_widget = build_config_grid(config)
 
     def _on_run_select(self, _table, run: dict) -> None:
         self._state.active_run = run["name"]
