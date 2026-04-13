@@ -168,7 +168,7 @@ class BaseResultsScreen:
 
         self._main_frame: urwid.Frame | None = None
         self._table: SortableTable | None = None
-        self._details_text: urwid.Text | None = None
+        self._details_content: urwid.WidgetPlaceholder | None = None
         self._footer: _ResultsFooter | None = None
         self._details_panel: urwid.Widget | None = None
         self._body_pile: urwid.Pile | None = None
@@ -222,13 +222,10 @@ class BaseResultsScreen:
         )
         urwid.connect_signal(self._table, "select", self._on_row_select)
 
-        self._details_text = urwid.Text("", align="left")
-        self._details_panel = urwid.BoxAdapter(
-            urwid.LineBox(
-                urwid.Filler(self._details_text, valign="top"),
-                title="Structure Details",
-            ),
-            14,
+        self._details_content = urwid.WidgetPlaceholder(urwid.Text("No structure selected."))
+        self._details_panel = urwid.LineBox(
+            self._details_content,
+            title="Structure Details",
         )
 
         self._footer = _ResultsFooter(self)
@@ -280,10 +277,8 @@ class BaseResultsScreen:
         self._table.set_data(self._get_display_results())
 
     def _update_details(self, result: dict | None) -> None:
-        if self._details_text is None:
+        if getattr(self, "_details_content", None) is None:
             return
-
-        markup: list = []
 
         if result is None:
             if (
@@ -291,98 +286,93 @@ class BaseResultsScreen:
                 and self._results
                 and not any(r.get("converged", True) for r in self._results)
             ):
-                markup.append(
-                    (
-                        "details",
-                        "All structures are unconverged. Press [u] to show them.\n",
-                    )
+                self._details_content.original_widget = urwid.Text(
+                    [("details", "All structures are unconverged. Press [u] to show them.")]
                 )
             else:
-                markup.append(("details", "No structure selected.\n"))
+                self._details_content.original_widget = urwid.Text(
+                    [("details", "No structure selected.")]
+                )
+            return
+
+        idx = result.get("structure_index", result.get("id", 1) - 1)
+        try:
+            idx = int(idx)
+        except (TypeError, ValueError):
+            idx = None
+
+        if idx is not None and 0 <= idx < len(self._structures):
+            atoms = self._structures[idx]
+            cell_lengths = atoms.get_cell().lengths()
+
+            cells = []
+            def add_cell(label, val):
+                cells.append(urwid.Text([("form_label", f"{label}: "), ("details", str(val))], align="left"))
+
+            if result.get("structure_id"):
+                add_cell("ID", result.get("structure_id"))
+
+            add_cell("Atoms", len(atoms))
+            add_cell("Cell (Å)", f"{cell_lengths[0]:.3f}, {cell_lengths[1]:.3f}, {cell_lengths[2]:.3f}")
+            add_cell("Initial SG", result.get("initial_spg", "N/A"))
+            add_cell("Final SG", result.get("final_spg", "N/A"))
+            
+            epa = result.get('energy_per_atom', result.get('effective_per_atom', 0.0))
+            add_cell("Energy/atom", f"{epa:.4f} eV")
+            
+            if self._pressure_gpa > 0:
+                h = result.get("enthalpy_per_atom")
+                if h is not None:
+                    add_cell("Enthalpy/atom", f"{h:.4f} eV")
+                vol = result.get("volume")
+                if vol is not None:
+                    add_cell("Volume", f"{vol:.3f} Å³")
+                add_cell("Pressure", f"{self._pressure_gpa} GPa")
+            
+            fmax = result.get('fmax')
+            if fmax is not None:
+                add_cell("Fmax", f"{fmax:.3f}")
+            
+            converged = result.get('converged')
+            if converged is not None:
+                add_cell("Converged", bool(converged))
+            
+            if self._show_thickness:
+                t = result.get("thickness")
+                if t is not None:
+                    add_cell("Thickness (Å)", f"{t:.2f}")
+            
+            for extra in self._get_extra_details(result):
+                markup, text = extra
+                text = text.rstrip("\n")
+                if ":" in text:
+                    label, val = text.split(":", 1)
+                    cells.append(urwid.Text([("form_label", f"{label}: "), ("details", val.strip())], align="left"))
+                else:
+                    cells.append(urwid.Text([(markup, text)], align="left"))
+            
+            if self._show_dynamical_stability:
+                dyn = _dyn_stability(result, self._phonon_cutoff)
+                dyn_str = "Yes" if dyn is True else ("No" if dyn is False else "N/A")
+                add_cell("Dyn. Stability", dyn_str)
+                
+            min_freq = result.get("min_phonon_freq")
+            if min_freq is not None:
+                try:
+                    f = float(min_freq)
+                    if not math.isnan(f):
+                        add_cell("Min freq (THz)", f"{f:.4f}")
+                except (TypeError, ValueError):
+                    pass
+                    
+            dup = result.get("duplicate")
+            if dup is not None:
+                add_cell("Duplicate", "Yes" if dup else "No")
+
+            grid = urwid.GridFlow(cells, cell_width=35, h_sep=2, v_sep=1, align="left")
+            self._details_content.original_widget = grid
         else:
-            idx = result.get("structure_index", result.get("id", 1) - 1)
-            try:
-                idx = int(idx)
-            except (TypeError, ValueError):
-                idx = None
-
-            if idx is not None and 0 <= idx < len(self._structures):
-                atoms = self._structures[idx]
-                cell_lengths = atoms.get_cell().lengths()
-
-                if result.get("structure_id"):
-                    markup.append(("details_title", f"ID: {result.get('structure_id')}\n"))
-
-                markup.append(("details", f"Atoms: {len(atoms)}\n"))
-                markup.append(
-                    (
-                        "details",
-                        f"Cell (Å): {cell_lengths[0]:.3f}, "
-                        f"{cell_lengths[1]:.3f}, {cell_lengths[2]:.3f}\n",
-                    )
-                )
-                markup.append(
-                    ("details", f"Initial SG: {result.get('initial_spg', 'N/A')}\n")
-                )
-                markup.append(
-                    ("details", f"Final SG: {result.get('final_spg', 'N/A')}\n")
-                )
-                markup.append(
-                    (
-                        "details",
-                        f"Energy/atom: {result.get('energy_per_atom', result.get('effective_per_atom', 0.0)):.4f} eV\n",
-                    )
-                )
-                if self._pressure_gpa > 0:
-                    h = result.get("enthalpy_per_atom")
-                    if h is not None:
-                        markup.append(("details", f"Enthalpy/atom: {h:.4f} eV\n"))
-                    vol = result.get("volume")
-                    if vol is not None:
-                        markup.append(("details", f"Volume: {vol:.3f} Å³\n"))
-                    markup.append(("details", f"Pressure: {self._pressure_gpa} GPa\n"))
-                
-                fmax = result.get('fmax')
-                if fmax is not None:
-                    markup.append(("details", f"Fmax: {fmax:.3f}\n"))
-                converged = result.get('converged')
-                if converged is not None:
-                    markup.append(("details", f"Converged: {bool(converged)}\n"))
-                
-                if self._show_thickness:
-                    t = result.get("thickness")
-                    if t is not None:
-                        markup.append(("details", f"Thickness (Å): {t:.2f}\n"))
-                
-                markup.extend(self._get_extra_details(result))
-                
-                if self._show_dynamical_stability:
-                    dyn = _dyn_stability(result, self._phonon_cutoff)
-                    dyn_str = (
-                        "Yes" if dyn is True else ("No" if dyn is False else "N/A")
-                    )
-                    markup.append(("details", f"Dynamical stability: {dyn_str}\n"))
-                min_freq = result.get("min_phonon_freq")
-                if min_freq is not None:
-                    try:
-                        f = float(min_freq)
-                        if not math.isnan(f):
-                            markup.append(
-                                ("details", f"Min phonon freq (THz): {f:.4f}\n")
-                            )
-                    except (TypeError, ValueError):
-                        pass
-                dup = result.get("duplicate")
-                if dup is not None:
-                    markup.append(
-                        ("details", f"Duplicate: {'Yes' if dup else 'No'}\n")
-                    )
-            else:
-                markup.append(
-                    ("details", "No structure data available for this row.\n")
-                )
-
-        self._details_text.set_text(markup)
+            self._details_content.original_widget = urwid.Text([("details", "No structure data available for this row.")])
 
     def apply_search(self, query: str) -> None:
         self._search_query = query.strip().lower()
