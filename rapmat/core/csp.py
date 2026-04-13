@@ -479,7 +479,7 @@ def run_generation_loop(
                 (run_seed + counter) % (2**32) if run_seed is not None else None
             )
             status, struct_id, atoms, vec = _generate_one_structure(
-                ph["id"], spg, fu, elements, formula_values, search_dim, None,
+                ph["id"], spg, fu, elements, formula_values, search_dim, thickness_cutoff,
                 seed=struct_seed,
                 max_count=max_count,
             )
@@ -513,7 +513,7 @@ def run_generation_loop(
                     elements,
                     formula_values,
                     search_dim,
-                    None,
+                    thickness_cutoff,
                     seed=(
                         (run_seed + idx) % (2**32)
                         if run_seed is not None
