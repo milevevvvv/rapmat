@@ -92,7 +92,9 @@ def run_processing_loop(
 
     _calc_cb.on_status(f"Loading calculator {calculator_name}...")
     calculator = load_calculator(
-        Calculators(calculator_name), config=calculator_config,
+        Calculators(calculator_name),
+        calculator_workdir_path,
+        config=calculator_config,
         callback=_calc_cb,
     )
 
