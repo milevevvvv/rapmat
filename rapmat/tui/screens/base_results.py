@@ -76,8 +76,12 @@ class _SaveDialog(urwid.WidgetWrap):
 
     signals = ["close"]
 
-    def __init__(self, parent: urwid.Widget, on_save) -> None:
+    def __init__(self, parent: urwid.Widget, on_save, num_filtered: int = 1) -> None:
         self._on_save = on_save
+
+        self._scope_group: list = []
+        scope_rb1 = urwid.RadioButton(self._scope_group, "Focused structure only")
+        self._save_all_rb = urwid.RadioButton(self._scope_group, f"All {num_filtered} filtered structures")
 
         self._fmt_group: list = []
         cif_rb = urwid.RadioButton(self._fmt_group, "cif")
@@ -86,11 +90,12 @@ class _SaveDialog(urwid.WidgetWrap):
         self._standardize_cb = urwid.CheckBox("Standardize cell", state=False)
 
         def _ok(_btn: urwid.Button) -> None:
+            save_all = self._save_all_rb.state
             fmt = next((rb.label for rb in self._fmt_group if rb.state), "cif")
             directory = self._dir_edit.edit_text.strip() or str(Path.cwd())
             standardize = self._standardize_cb.state
             self._emit("close", True)
-            on_save(fmt, directory, standardize)
+            on_save(fmt, directory, standardize, save_all)
 
         def _cancel(_btn: urwid.Button) -> None:
             self._emit("close", False)
@@ -104,6 +109,10 @@ class _SaveDialog(urwid.WidgetWrap):
 
         body = urwid.Pile(
             [
+                urwid.Text("Scope:"),
+                scope_rb1,
+                self._save_all_rb,
+                urwid.Divider(),
                 urwid.Text("Format:"),
                 cif_rb,
                 xyz_rb,
@@ -128,7 +137,7 @@ class _SaveDialog(urwid.WidgetWrap):
             width=(urwid.RELATIVE, 50),
             valign=urwid.MIDDLE,
             height=urwid.PACK,
-            min_width=40,
+            min_width=45,
         )
         super().__init__(overlay)
 
@@ -526,22 +535,38 @@ class BaseResultsScreen:
             self._show_message("No structure data available to save.")
             return
 
+        filtered_results = self._get_display_results()
+        num_filtered = len(filtered_results)
+
         current_body = self._main_frame.body
 
-        def _on_save(fmt: str, directory: str, standardize: bool) -> None:
+        def _on_save(fmt: str, directory: str, standardize: bool, save_all: bool) -> None:
             self._main_frame.body = current_body  
-            self._do_save(result, idx, fmt, directory, standardize)
+            if not save_all:
+                self._do_save(result, idx, fmt, directory, standardize, quiet=False)
+            else:
+                success_count = 0
+                for res in filtered_results:
+                    res_idx = res.get("structure_index", res.get("id", 1) - 1)
+                    try:
+                        res_idx = int(res_idx)
+                        if res_idx is not None and 0 <= res_idx < len(self._structures):
+                            if self._do_save(res, res_idx, fmt, directory, standardize, quiet=True):
+                                success_count += 1
+                    except (TypeError, ValueError):
+                        pass
+                self._show_message(f"Saved {success_count}/{num_filtered} structures to {directory}")
 
         def _on_cancel() -> None:
             self._main_frame.body = current_body  
 
-        save_dlg = _SaveDialog(current_body, _on_save)
+        save_dlg = _SaveDialog(current_body, _on_save, num_filtered=num_filtered)
         urwid.connect_signal(
             save_dlg, "close", lambda _w, ok: _on_cancel() if not ok else None
         )
         self._main_frame.body = save_dlg
 
-    def _do_save(self, result: dict, idx: int, fmt: str, directory: str, standardize: bool = True) -> None:
+    def _do_save(self, result: dict, idx: int, fmt: str, directory: str, standardize: bool = True, quiet: bool = False) -> bool:
         from rapmat.utils.structure import standardize_atoms
 
         atoms = self._structures[idx]
@@ -555,9 +580,13 @@ class BaseResultsScreen:
         out_path = out_dir / f"structure_{ident}.{fmt}"
         try:
             write_ase_structure(str(out_path), atoms)
-            self._show_message(f"Saved: {out_path}")
+            if not quiet:
+                self._show_message(f"Saved: {out_path}")
+            return True
         except Exception as exc:
-            self._show_message(f"Save failed: {exc}")
+            if not quiet:
+                self._show_message(f"Save failed: {exc}")
+            return False
 
     def _action_enter_search(self) -> None:
         if self._footer is None or self._main_frame is None:
