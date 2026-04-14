@@ -63,6 +63,12 @@ class StudyCreateScreen:
                     options=["bulk", "monolayer"],
                     default=0,
                 ),
+                text_field(
+                    key="thickness_cutoff",
+                    label="Monolayer Thick. (Å)",
+                    default="None",
+                    validator=lambda v: "Float or 'None'" if v.strip().lower() != "none" and not v.strip().replace(".", "", 1).isdigit() else None,
+                ),
                 dropdown_field(
                     key="calculator",
                     label="Calculator",
@@ -194,6 +200,9 @@ class StudyCreateScreen:
             self._error_text.set_text(("form_error", f"  Invalid system: {exc}"))
             return
 
+        thickness_val = vals.get("thickness_cutoff", "None").strip()
+        thickness_cutoff = None if thickness_val.lower() == "none" else float(thickness_val)
+
         try:
             self._state.store.create_study(
                 study_id=name,
@@ -202,6 +211,7 @@ class StudyCreateScreen:
                 calculator=calculator,
                 config={
                     "calculator_config": calc_config_dict,
+                    "thickness_cutoff": thickness_cutoff,
                     "pressure_gpa": vals["pressure"],
                     "force_conv_crit": vals["force_conv_crit"],
                     "steps_max": vals["steps_max"],
