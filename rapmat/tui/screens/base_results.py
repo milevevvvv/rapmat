@@ -76,7 +76,7 @@ class _SaveDialog(urwid.WidgetWrap):
 
     signals = ["close"]
 
-    def __init__(self, parent: urwid.Widget, on_save, num_filtered: int = 1) -> None:
+    def __init__(self, parent: urwid.Widget, on_save, num_filtered: int = 1, default_dir: str = "") -> None:
         self._on_save = on_save
 
         self._scope_group: list = []
@@ -86,13 +86,15 @@ class _SaveDialog(urwid.WidgetWrap):
         self._fmt_group: list = []
         cif_rb = urwid.RadioButton(self._fmt_group, "cif")
         xyz_rb = urwid.RadioButton(self._fmt_group, "xyz")
-        self._dir_edit = urwid.Edit(caption="Directory: ", edit_text=str(Path.cwd()))
+        if not default_dir:
+            default_dir = str(Path.cwd())
+        self._dir_edit = urwid.Edit(caption="Directory: ", edit_text=default_dir)
         self._standardize_cb = urwid.CheckBox("Standardize cell", state=False)
 
         def _ok(_btn: urwid.Button) -> None:
             save_all = self._save_all_rb.state
             fmt = next((rb.label for rb in self._fmt_group if rb.state), "cif")
-            directory = self._dir_edit.edit_text.strip() or str(Path.cwd())
+            directory = self._dir_edit.edit_text.strip() or default_dir
             standardize = self._standardize_cb.state
             self._emit("close", True)
             on_save(fmt, directory, standardize, save_all)
@@ -560,7 +562,10 @@ class BaseResultsScreen:
         def _on_cancel() -> None:
             self._main_frame.body = current_body  
 
-        save_dlg = _SaveDialog(current_body, _on_save, num_filtered=num_filtered)
+        run_name = getattr(self, "_run_name", None) or self._state.active_run
+        default_dir = str(Path.cwd() / f"saved_{run_name}") if run_name else str(Path.cwd())
+
+        save_dlg = _SaveDialog(current_body, _on_save, num_filtered=num_filtered, default_dir=default_dir)
         urwid.connect_signal(
             save_dlg, "close", lambda _w, ok: _on_cancel() if not ok else None
         )
