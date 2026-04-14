@@ -354,7 +354,7 @@ def run_processing_loop(
                         _report(f"CRITICAL ERROR: Reload failed: {reload_ex}")
                         _report(f"Reload traceback:\n{reload_tb}")
                         store.update_structure(struct_id, status="error")
-                        break # Give up on this structure if reload fails
+                        break
 
             if progress_callback:
                 progress_callback(

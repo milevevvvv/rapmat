@@ -27,11 +27,11 @@ def build_calculator_mattersim():
             # often natively passes float64 numpy arrays, causing crash:
             # "expected scalar type Float but found Double"
             # We wrap the calculate method to enforce float32 casting.
+            # Will it work though? Idk
             import numpy as np
             orig_calculate = calculator.calculate
             
             def _safe_calculate(*args, **kwargs):
-                # atoms can be passed as a positional arg, kwarg, or bound to the calculator
                 atoms = kwargs.get("atoms")
                 if atoms is None and len(args) > 0:
                     atoms = args[0]

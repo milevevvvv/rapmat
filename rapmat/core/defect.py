@@ -52,8 +52,6 @@ class DefectGenerator:
             sc_structure = self.pmg_structure.copy()
             sc_structure.make_supercell(supercell)
 
-            # Remove site at idx (representative)
-            # Safe assumption for ordered supercells in pymatgen
             defect_sc = sc_structure.copy()
             defect_sc.remove_sites([idx])
 
