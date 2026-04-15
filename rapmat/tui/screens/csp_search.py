@@ -117,9 +117,6 @@ class CSPSearchScreen:
 
             parts = parse_formula(val.strip())
             if len(parts) > 2:
-                # the grid search will only be enabled for binary or unary anyway,
-                # but let's let parse_formula handle the rest. We don't want to break
-                # typical run logic. We'll validate grid search at submit time.
                 pass
         except Exception:
             return "Invalid formula (e.g. Al2O3 or Al-O for grid search)"
@@ -133,7 +130,6 @@ class CSPSearchScreen:
         grid_cb = self._form.get_widget("grid_search")
         study_dd = self._form.get_widget("study")
         
-        # Prevent race condition on keypress by prioritizing the dispatched _state 
         if _widget == grid_cb:
             is_grid = _state
             study_raw = study_dd.value
@@ -255,7 +251,6 @@ class CSPSearchScreen:
         formula = parse_formula(formula_str) if formula_str else {}
         elements = list(formula.keys())
 
-        # Seed: auto-generate if 0
         import random as _random
         seed_val = vals.get("seed", 0)
         if seed_val == 0:
@@ -269,7 +264,6 @@ class CSPSearchScreen:
 
         study_id = study_raw
 
-        # Load the Study to get domain and config
         study = store.get_study(study_id)
         if not study:
             raise ValueError(f"Study {study_id} no longer exists.")
@@ -285,7 +279,6 @@ class CSPSearchScreen:
             meta={"type": "SOAP", "species": elements},
         )
         
-        # Determine the runs to queue
         runs_to_queue = []
         if is_grid_search:
             el_A, el_B = elements[0], elements[1]
@@ -294,8 +287,6 @@ class CSPSearchScreen:
             for x in ratios:
                 y = 1.0 - x
                 
-                # Convert ratios back to integers for the formula spec to keep things clean
-                # Find smallest integer denominator
                 import math
                 def float_to_ratio(val, tol=1e-4):
                     for i in range(1, 100):
@@ -339,11 +330,9 @@ class CSPSearchScreen:
             if is_log:
                 progress.log(msg)
                 
-        # To handle multiple runs, we'll iterate
         total_runs = len(runs_to_queue)
         runs_created = []
 
-        # 1. First, queue ALL runs and populate their DB placeholders
         for i, (run_name, run_formula) in enumerate(runs_to_queue):
             progress.log(f"[{i+1}/{total_runs}] Queuing run '{run_name}'...")
             
@@ -380,7 +369,6 @@ class CSPSearchScreen:
             store.add_generation_placeholders(run_name, placeholders)
             runs_created.append((run_name, run_config))
 
-        # 2. Compute loops
         for i, (run_name, run_config) in enumerate(runs_created):
             cancel_flag = [False]
 
@@ -389,7 +377,6 @@ class CSPSearchScreen:
                 with workdir_context(None) as workdir_path:
                     progress.log(f"Working directory: {workdir_path}")
 
-                    # We need the full config for the loops
                     meta = store.get_run_metadata(run_name) or {}
                     full_cfg = meta.get("config", run_config)
                     
@@ -443,7 +430,6 @@ class CSPSearchScreen:
                 store.release_run(run_name, "failed")
                 raise
 
-        # We set active run to the last one queued explicitly 
         if runs_to_queue:
             self._state.active_run = runs_to_queue[-1][0]
             
