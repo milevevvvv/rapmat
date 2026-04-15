@@ -19,8 +19,27 @@ from rapmat.tui.state import AppState
 
 def _get_calculator_options() -> list[str]:
     from rapmat.calculators import Calculators
-
     return [c.value for c in Calculators]
+
+
+def _validate_system(v: str) -> str | None:
+    from rapmat.utils.common import parse_system
+    try:
+        parse_system(v)
+        return None
+    except Exception as exc:
+        return str(exc)
+
+
+def _validate_thickness(v: str) -> str | None:
+    v = v.strip()
+    if not v:
+        return None
+    try:
+        float(v)
+        return None
+    except ValueError:
+        return "Must be a number or empty"
 
 
 class StudyCreateScreen:
@@ -49,7 +68,7 @@ class StudyCreateScreen:
                     key="system",
                     label="System (e.g., Al-O)",
                     default="",
-                    validator=lambda v: "Required" if not v.strip() else None,
+                    validator=_validate_system,
                 ),
                 text_field(
                     key="name",
@@ -66,8 +85,8 @@ class StudyCreateScreen:
                 text_field(
                     key="thickness_cutoff",
                     label="Monolayer Thick. (Å)",
-                    default="None",
-                    validator=lambda v: "Float or 'None'" if v.strip().lower() != "none" and not v.strip().replace(".", "", 1).isdigit() else None,
+                    default="",
+                    validator=_validate_thickness,
                 ),
                 dropdown_field(
                     key="calculator",
@@ -133,8 +152,20 @@ class StudyCreateScreen:
         )
         self._main_body = urwid.Padding(scrollable, left=2, right=2)
         self._frame = urwid.Frame(body=self._main_body)
+
+        # Signal connection for dynamic field toggle
+        domain_widget = self._form.get_widget("domain")
+        if domain_widget:
+            urwid.connect_signal(domain_widget, "change", self._on_domain_change)
+            # Initialize state (Domain defaults to 0 -> "bulk")
+            self._form.set_field_disabled("thickness_cutoff", disabled=True)
+
         self._update_footer()
         return self._frame
+
+    def _on_domain_change(self, _widget, new_value: str) -> None:
+        if self._form:
+            self._form.set_field_disabled("thickness_cutoff", disabled=(new_value != "monolayer"))
 
     def on_resume(self) -> None:
         self._update_footer()
@@ -200,8 +231,13 @@ class StudyCreateScreen:
             self._error_text.set_text(("form_error", f"  Invalid system: {exc}"))
             return
 
-        thickness_val = vals.get("thickness_cutoff", "None").strip()
-        thickness_cutoff = None if thickness_val.lower() == "none" else float(thickness_val)
+        thickness_val = vals.get("thickness_cutoff", "").strip()
+        thickness_cutoff = None
+        if thickness_val and thickness_val.lower() != "none":
+            try:
+                thickness_cutoff = float(thickness_val)
+            except ValueError:
+                pass
 
         try:
             self._state.store.create_study(
