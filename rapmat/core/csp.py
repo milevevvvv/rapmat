@@ -46,7 +46,6 @@ def run_processing_loop(
     from rapmat.utils.console import console, err_console
 
     class _ProgressCalcCallback:
-        """Adapter: forwards calculator status to the TUI progress callback."""
 
         def on_status(self, message: str) -> None:
             if progress_callback:

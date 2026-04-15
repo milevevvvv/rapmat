@@ -1,5 +1,4 @@
 def app_main() -> None:
-    """Launch the TUI."""
 
     from rapmat.db_config import resolve_store
     from rapmat.tui.app import RapmatApp
