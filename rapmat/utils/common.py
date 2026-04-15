@@ -4,6 +4,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Tuple
 
+from ase.data import atomic_numbers
 import chemparse
 from rapmat.config import APP_TMPDIR_SUFFIX
 
@@ -37,12 +38,17 @@ def validate_formula_units(formula_units: Tuple[int, int]) -> None:
 def parse_system(system: str) -> list[str]:
     """Parse a chemical system string like ``"Al-O"`` into ``["Al", "O"]``.
 
-    Elements are returned sorted alphabetically. Whitespace around element
-    symbols is stripped.
+    Each component is verified to be a valid chemical element symbol.
+    Elements are returned sorted alphabetically.
     """
     elements = [e.strip() for e in system.split("-") if e.strip()]
     if not elements:
         raise ValueError(f"Invalid system string: '{system}'.")
+
+    for e in elements:
+        if e not in atomic_numbers:
+            raise ValueError(f"Invalid element symbol: '{e}' in system '{system}'.")
+
     return sorted(set(elements))
 
 
