@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import List, Optional, Tuple
 
 import numpy as np
+from filelock import FileLock, Timeout
 from ase import Atoms
 from ase.io.jsonio import decode as ase_decode
 from ase.io.jsonio import encode as ase_encode
@@ -175,7 +176,21 @@ class SurrealDBStore(StructureStore):
     def from_path(cls, db_path: Path, **kwargs) -> "SurrealDBStore":
         """Create a persistent store backed by a directory on disk."""
         db_path.mkdir(parents=True, exist_ok=True)
-        return cls(db_url=f"file://{db_path.as_posix()}", **kwargs)
+        
+        lock_path = db_path / "rapmat.lock"
+        file_lock = FileLock(lock_path, timeout=2.0)
+        
+        try:
+            file_lock.acquire()
+        except Timeout:
+            raise RuntimeError(
+                f"Another rapmat instance is using the database at {db_path}. "
+                "Close it first, or switch to remote mode."
+            )
+
+        instance = cls(db_url=f"file://{db_path.as_posix()}", **kwargs)
+        instance._file_lock = file_lock
+        return instance
 
     def _define_schema(self) -> None:
         self._db.query(_SCHEMA_DDL)
@@ -1457,6 +1472,13 @@ class SurrealDBStore(StructureStore):
             self._db.close()
         except Exception:
             pass
+        
+        # Release the file lock safely if one is held by the store
+        if hasattr(self, "_file_lock") and getattr(self._file_lock, "is_locked", False):
+            try:
+                self._file_lock.release()
+            except Exception:
+                pass
 
 
 # ------------------------------------------------------------------ #
