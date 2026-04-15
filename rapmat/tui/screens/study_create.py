@@ -66,8 +66,8 @@ class StudyCreateScreen:
             fields=[
                 text_field(
                     key="system",
-                    label="System (e.g., Al-O)",
-                    default="",
+                    label="System",
+                    default="Al-O",
                     validator=_validate_system,
                 ),
                 text_field(
