@@ -1,11 +1,10 @@
 import urwid
 
 from rapmat.config import APP_DATA_DIR
-from rapmat.tui.widgets.dialog import ModalDialog
-from rapmat.tui.widgets.dropdown import DropdownSelect
-
 from rapmat.tui.router import ScreenRouter
 from rapmat.tui.state import AppState
+from rapmat.tui.widgets.dialog import ModalDialog
+from rapmat.tui.widgets.dropdown import DropdownSelect
 
 _MODES = ["Local SurrealDB", "Remote SurrealDB"]
 _MODE_TO_KEY = {
@@ -299,8 +298,8 @@ class DbSettingsScreen:
             return
         mode = self._current_mode_key()
         try:
-            from rapmat.db_config import resolve_store, save_db_config
             from rapmat.config import DbBackend, DbMode, DbParams
+            from rapmat.db_config import resolve_store, save_db_config
 
             server_cfg = self._get_server_cfg() if mode == "remote" else None
             save_db_config(general={"mode": mode}, server=server_cfg)

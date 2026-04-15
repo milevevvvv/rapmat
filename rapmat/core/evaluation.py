@@ -1,4 +1,5 @@
 from typing import Sequence
+
 from rapmat.utils.structure import standardize_atoms
 
 # ------------------------------------------------------------------ #
@@ -23,10 +24,10 @@ def run_eval_loop(
     reduce_to_primitive: bool = True,
     symprec: float = 1e-3,
 ) -> None:
-    from rapmat.core.phonon import get_mesh_min_frequency, structure_calculate_phonons
-    from rapmat.utils.console import err_console
-
     from rapmat.calculators import cleanup_calculator_files
+    from rapmat.core.phonon import (get_mesh_min_frequency,
+                                    structure_calculate_phonons)
+    from rapmat.utils.console import err_console
 
     n_total = len(pending)
     for i, rec in enumerate(pending, 1):

@@ -10,6 +10,7 @@ import numpy as np
 import pytest
 from ase.build import bulk
 from ase.calculators.emt import EMT
+
 from rapmat.core.csp import run_processing_loop
 from rapmat.storage import SOAPDescriptor, SurrealDBStore
 

@@ -1,19 +1,14 @@
-import urwid
-
 from pathlib import Path
 
-from rapmat.tui.widgets.form import (
-    FormGroup,
-    checkbox_field,
-    dropdown_field,
-    float_field,
-)
-from rapmat.tui.widgets.progress import ProgressPanel
-from rapmat.tui.widgets.table import SortableTable
+import urwid
 
 from rapmat.tui.router import ScreenRouter
 from rapmat.tui.state import AppState
 from rapmat.tui.tasks import BackgroundTask
+from rapmat.tui.widgets.form import (FormGroup, checkbox_field, dropdown_field,
+                                     float_field)
+from rapmat.tui.widgets.progress import ProgressPanel
+from rapmat.tui.widgets.table import SortableTable
 
 _DIST_COLS = [("Metric", 28), ("Value", 18)]
 _WATERFALL_COLS = [("Stage", 24), ("Kept", 10), ("Change", 10), ("Notes", 30)]
@@ -174,11 +169,10 @@ class DedupScreen:
 
     def _worker(self, progress, vals: dict) -> None:
         import numpy as np
-        from rapmat.core.dedup_analysis import (
-            compute_pairwise_distances,
-            find_threshold_for_survival,
-            simulate_deduplication,
-        )
+
+        from rapmat.core.dedup_analysis import (compute_pairwise_distances,
+                                                find_threshold_for_survival,
+                                                simulate_deduplication)
 
         store = self._state.store
         run_name = vals["run_name"]

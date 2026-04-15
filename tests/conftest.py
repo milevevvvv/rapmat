@@ -6,6 +6,7 @@ import spglib
 spglib.OLD_ERROR_HANDLING = False
 
 import sys
+
 import torch
 
 if sys.platform == "win32":
@@ -19,6 +20,7 @@ import pytest
 from ase import Atoms
 from ase.build import bulk
 from ase.calculators.emt import EMT
+
 from rapmat.storage import SurrealDBStore
 from rapmat.storage.base import StructureStore
 

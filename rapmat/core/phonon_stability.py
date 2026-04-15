@@ -1,17 +1,15 @@
-from ase import Atoms
 from typing import Callable, List, Optional, Tuple
+
+from ase import Atoms
 
 from rapmat.calculators import CalculatorCallback, Calculators
 from rapmat.calculators.factory import load_calculator
-from rapmat.core.phonon import (
-    get_mesh_min_frequency,
-    structure_calculate_phonons,
-    structure_has_imag_phonon_freq,
-)
+from rapmat.core.phonon import (get_mesh_min_frequency,
+                                structure_calculate_phonons,
+                                structure_has_imag_phonon_freq)
+from rapmat.storage.base import StructureStore
 from rapmat.utils.common import workdir_context
 from rapmat.utils.console import console, err_console
-
-from rapmat.storage.base import StructureStore
 
 
 def compute_dynamical_stability_for_results(

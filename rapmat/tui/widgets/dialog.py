@@ -1,6 +1,6 @@
-import urwid
-
 from typing import Callable, Sequence
+
+import urwid
 
 
 class ModalDialog(urwid.WidgetWrap):

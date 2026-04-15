@@ -1,15 +1,10 @@
 import urwid
 
-from rapmat.tui.widgets.dialog import ModalDialog
-from rapmat.tui.widgets.form import (
-    FormGroup,
-    checkbox_field,
-    text_field,
-    tuple_field,
-)
-
 from rapmat.tui.router import ScreenRouter
 from rapmat.tui.state import AppState
+from rapmat.tui.widgets.dialog import ModalDialog
+from rapmat.tui.widgets.form import (FormGroup, checkbox_field, text_field,
+                                     tuple_field)
 
 
 class DefectScreen:
@@ -155,6 +150,7 @@ class DefectScreen:
 
             from ase.io import read as read_ase_structure
             from ase.io import write as write_ase_structure
+
             from rapmat.core.defect import DefectGenerator
 
             structure = read_ase_structure(structure_file)

@@ -7,14 +7,10 @@ from unittest.mock import patch
 import numpy as np
 import pytest
 from ase.build import bulk
+
 from rapmat.config import DbMode, DbParams
-from rapmat.db_config import (
-    _DB_CONFIG_FILE,
-    clear_db_config,
-    load_db_config,
-    resolve_store,
-    save_db_config,
-)
+from rapmat.db_config import (_DB_CONFIG_FILE, clear_db_config, load_db_config,
+                              resolve_store, save_db_config)
 from rapmat.storage import SurrealDBStore
 
 # ------------------------------------------------------------------ #

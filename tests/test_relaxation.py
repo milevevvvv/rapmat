@@ -8,6 +8,7 @@ import numpy as np
 import pytest
 from ase.build import bulk, fcc111
 from ase.calculators.emt import EMT
+
 from rapmat.core.relaxation import structure_relax
 
 # ------------------------------------------------------------------ #

@@ -1,9 +1,8 @@
 import urwid
 
-from rapmat.tui.widgets.table import SortableTable
-
 from rapmat.tui.router import ScreenRouter
 from rapmat.tui.state import AppState
+from rapmat.tui.widgets.table import SortableTable
 
 
 def _format_run_status(counts: dict[str, int]) -> str:

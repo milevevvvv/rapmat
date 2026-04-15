@@ -1,21 +1,20 @@
 import json
 import threading
-import numpy as np
-
 from datetime import datetime
 from pathlib import Path
 from typing import List, Optional, Tuple
 
+import numpy as np
 from ase import Atoms
 from ase.io.jsonio import decode as ase_decode
 from ase.io.jsonio import encode as ase_encode
-from surrealdb import RecordID, Surreal
-from rich.console import Console
 from filelock import FileLock, Timeout
+from rich.console import Console
+from surrealdb import RecordID, Surreal
 
-from rapmat.utils.structure import format_spg
 from rapmat.storage.base import StructureStore
 from rapmat.utils.console import console as default_console
+from rapmat.utils.structure import format_spg
 
 # ------------------------------------------------------------------ #
 #  Schema DDL (idempotent — safe to run on every connection)

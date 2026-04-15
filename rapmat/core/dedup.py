@@ -1,8 +1,8 @@
 import warnings
-import numpy as np
-
-from ase import Atoms
 from typing import Optional
+
+import numpy as np
+from ase import Atoms
 from pymatgen.analysis.structure_matcher import StructureMatcher
 from pymatgen.io.ase import AseAtomsAdaptor
 

@@ -4,13 +4,11 @@ import numpy as np
 import pytest
 from ase.build import bulk
 
-from rapmat.core.dedup_analysis import (
-    DedupSimulationResult,
-    compute_pairwise_distances,
-    find_threshold_for_survival,
-    plot_distance_histogram,
-    simulate_deduplication,
-)
+from rapmat.core.dedup_analysis import (DedupSimulationResult,
+                                        compute_pairwise_distances,
+                                        find_threshold_for_survival,
+                                        plot_distance_histogram,
+                                        simulate_deduplication)
 from rapmat.storage import SOAPDescriptor, SurrealDBStore
 
 

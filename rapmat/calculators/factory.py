@@ -1,11 +1,7 @@
 from pathlib import Path
 
-from rapmat.calculators import (
-    CalculatorCallback,
-    Calculators,
-    get_install_hint,
-    is_calculator_available,
-)
+from rapmat.calculators import (CalculatorCallback, Calculators,
+                                get_install_hint, is_calculator_available)
 
 
 def load_calculator(
@@ -17,11 +13,13 @@ def load_calculator(
     try:
         match calculator_name.value:
             case Calculators.MATTERSIM.value:
-                from rapmat.calculators.mattersim import build_calculator_mattersim
+                from rapmat.calculators.mattersim import \
+                    build_calculator_mattersim
 
                 return build_calculator_mattersim()
             case Calculators.NEQUIP_OAML.value:
-                from rapmat.calculators.nequip import build_calculator_nequip_oaml
+                from rapmat.calculators.nequip import \
+                    build_calculator_nequip_oaml
 
                 return build_calculator_nequip_oaml(callback=callback)
             case Calculators.UPET.value:

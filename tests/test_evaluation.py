@@ -1,7 +1,9 @@
 """Unit tests for rapmat.core.evaluation metric functions."""
 
 import pytest
-from rapmat.core.evaluation import compute_ranking_metrics, compute_stability_metrics
+
+from rapmat.core.evaluation import (compute_ranking_metrics,
+                                    compute_stability_metrics)
 
 # ------------------------------------------------------------------ #
 #  compute_ranking_metrics

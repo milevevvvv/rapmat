@@ -1,4 +1,5 @@
 import sys
+
 import urwid
 
 
@@ -12,8 +13,8 @@ def test_tui():
     app = RapmatApp(state)
 
     # We just want to instantiate the screens and make sure they don't crash
-    from rapmat.tui.screens.study_create import StudyCreateScreen
     from rapmat.tui.screens.csp_search import CSPSearchScreen
+    from rapmat.tui.screens.study_create import StudyCreateScreen
 
     print("Building StudyCreateScreen...")
     s1 = StudyCreateScreen(state, app._router)

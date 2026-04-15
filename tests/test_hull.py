@@ -19,11 +19,9 @@ import pytest
 from ase import Atoms
 from ase.build import bulk
 from conftest import VECTOR_DIM, add_relaxed_structure
-from rapmat.core.hull import (
-    build_phase_diagram,
-    get_composition_fraction,
-    get_reference_energies,
-)
+
+from rapmat.core.hull import (build_phase_diagram, get_composition_fraction,
+                              get_reference_energies)
 from rapmat.storage import SurrealDBStore
 
 # ------------------------------------------------------------------ #

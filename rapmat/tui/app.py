@@ -1,4 +1,5 @@
 import sys
+
 import urwid
 
 # NOTE: very dirty fix for Windows, research better solution
@@ -6,8 +7,8 @@ if sys.platform == "win32":
     sys.modules.pop("urwid.display.curses", None)
 
 from rapmat.tui.router import ScreenRouter
-from rapmat.tui.widgets.status_bar import StatusBar
 from rapmat.tui.state import AppState
+from rapmat.tui.widgets.status_bar import StatusBar
 
 # ------------------------------------------------------------------ #
 #  Global palette

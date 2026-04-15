@@ -1,6 +1,6 @@
 from rapmat.tui.router import ScreenRouter
-from rapmat.tui.state import AppState
 from rapmat.tui.screens.base_results import BaseResultsScreen, _dyn_stability
+from rapmat.tui.state import AppState
 
 
 class ResultsScreen(BaseResultsScreen):

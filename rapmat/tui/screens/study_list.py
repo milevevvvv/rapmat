@@ -1,9 +1,9 @@
 import urwid
 
-from rapmat.tui.widgets.table import SortableTable
 from rapmat.tui.router import ScreenRouter
 from rapmat.tui.state import AppState
 from rapmat.tui.widgets.config_grid import build_config_grid
+from rapmat.tui.widgets.table import SortableTable
 
 _STUDY_COLS = [
     ("Name", 22),

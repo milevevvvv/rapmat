@@ -1,23 +1,16 @@
 import json
-import urwid
-
 from typing import List
 
-from rapmat.tui.widgets.form import (
-    FormGroup,
-    checkbox_field,
-    dropdown_field,
-    float_field,
-    int_field,
-    text_field,
-    tuple_field,
-)
-from rapmat.tui.widgets.progress import ProgressPanel
-from rapmat.tui.widgets.table import SortableTable
+import urwid
 
 from rapmat.tui.router import ScreenRouter
 from rapmat.tui.state import AppState
 from rapmat.tui.tasks import BackgroundTask
+from rapmat.tui.widgets.form import (FormGroup, checkbox_field, dropdown_field,
+                                     float_field, int_field, text_field,
+                                     tuple_field)
+from rapmat.tui.widgets.progress import ProgressPanel
+from rapmat.tui.widgets.table import SortableTable
 
 
 def _calc_options() -> list[str]:
@@ -392,10 +385,8 @@ class EvalScreen:
         stable_only = vals.get("stable_only", True)
 
         try:
-            from rapmat.core.evaluation import (
-                compute_ranking_metrics,
-                compute_stability_metrics,
-            )
+            from rapmat.core.evaluation import (compute_ranking_metrics,
+                                                compute_stability_metrics)
 
             ranking = compute_ranking_metrics(
                 self._comparison, phonon_cutoff, stable_only

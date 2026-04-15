@@ -1,22 +1,15 @@
 import uuid
+
 import urwid
-
-from rapmat.tui.widgets.dialog import ModalDialog
-from rapmat.tui.widgets.progress import ProgressPanel
-from rapmat.tui.widgets.form import (
-    FormGroup,
-    checkbox_field,
-    dropdown_field,
-    float_field,
-    int_field,
-    radio_field,
-    text_field,
-)
-
 
 from rapmat.tui.router import ScreenRouter
 from rapmat.tui.state import AppState
 from rapmat.tui.tasks import BackgroundTask
+from rapmat.tui.widgets.dialog import ModalDialog
+from rapmat.tui.widgets.form import (FormGroup, checkbox_field, dropdown_field,
+                                     float_field, int_field, radio_field,
+                                     text_field)
+from rapmat.tui.widgets.progress import ProgressPanel
 
 
 def _calc_options() -> list[str]:
@@ -237,6 +230,7 @@ class CSPSearchScreen:
 
     def _worker(self, progress, vals) -> None:
         import time
+
         from rapmat.core.csp import run_generation_loop, run_processing_loop
         from rapmat.utils.common import parse_formula, workdir_context
 

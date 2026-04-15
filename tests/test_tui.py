@@ -80,14 +80,9 @@ class TestSortableTable:
 
 class TestFormGroup:
     def _make_form(self):
-        from rapmat.tui.widgets.form import (
-            FormGroup,
-            checkbox_field,
-            float_field,
-            int_field,
-            text_field,
-            tuple_field,
-        )
+        from rapmat.tui.widgets.form import (FormGroup, checkbox_field,
+                                             float_field, int_field,
+                                             text_field, tuple_field)
 
         return FormGroup(
             fields=[

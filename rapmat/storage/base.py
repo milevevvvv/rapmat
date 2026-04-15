@@ -1,9 +1,9 @@
-import numpy as np
-
-from ase import Atoms
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import List, Optional
+
+import numpy as np
+from ase import Atoms
 
 # ------------------------------------------------------------------ #
 #  Descriptor ABC

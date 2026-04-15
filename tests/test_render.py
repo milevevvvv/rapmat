@@ -1,12 +1,13 @@
 import sys
+
 import urwid
 
 
 def test_render():
     from rapmat.db_config import resolve_store
     from rapmat.tui.app import RapmatApp
-    from rapmat.tui.state import AppState
     from rapmat.tui.screens.home import HomeScreen
+    from rapmat.tui.state import AppState
 
     store = resolve_store()
     state = AppState(store=store, db_url="test")

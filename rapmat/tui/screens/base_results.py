@@ -1,15 +1,15 @@
 import math
-import urwid
-
-from ase import Atoms
-from ase.io import write as write_ase_structure
 from pathlib import Path
 from typing import Optional
 
-from rapmat.tui.widgets.table import SortableTable
+import urwid
+from ase import Atoms
+from ase.io import write as write_ase_structure
+
 from rapmat.tui.router import ScreenRouter
 from rapmat.tui.state import AppState
 from rapmat.tui.tasks import BackgroundTask
+from rapmat.tui.widgets.table import SortableTable
 
 
 def _dyn_stability(result: dict, phonon_cutoff: float | None) -> Optional[bool]:
@@ -689,15 +689,10 @@ class BaseResultsScreen:
             )
             return
 
-        from rapmat.tui.widgets.form import (
-            FormGroup,
-            checkbox_field,
-            dropdown_field,
-            float_field,
-            int_field,
-            tuple_field,
-        )
         from rapmat.calculators import Calculators
+        from rapmat.tui.widgets.form import (FormGroup, checkbox_field,
+                                             dropdown_field, float_field,
+                                             int_field, tuple_field)
 
         calc_options = [c.value for c in Calculators]
 
@@ -781,9 +776,10 @@ class BaseResultsScreen:
             return
 
         from rapmat.calculators import Calculators
+        from rapmat.core.phonon_stability import \
+            compute_dynamical_stability_for_results
         from rapmat.tui.tasks import BackgroundTask
         from rapmat.tui.widgets.progress import ProgressPanel
-        from rapmat.core.phonon_stability import compute_dynamical_stability_for_results
 
         top_n = int(vals.get("top_n", 5))
         calc_name = vals.get("calculator", Calculators.MATTERSIM.value)

@@ -1,7 +1,7 @@
 import warnings
+from typing import List, Tuple
 
 from ase import Atoms
-from typing import List, Tuple
 from pymatgen.io.ase import AseAtomsAdaptor
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 

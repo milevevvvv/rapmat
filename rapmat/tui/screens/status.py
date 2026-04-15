@@ -1,9 +1,8 @@
 import urwid
 
-from rapmat.tui.widgets.table import SortableTable
-
 from rapmat.tui.router import ScreenRouter
 from rapmat.tui.state import AppState
+from rapmat.tui.widgets.table import SortableTable
 
 _CALC_COLS = [
     ("Calculator", 20),
@@ -13,7 +12,8 @@ _CALC_COLS = [
 
 
 def _load_calc_rows() -> list[dict]:
-    from rapmat.calculators import CALCULATOR_META, Calculators, is_calculator_available
+    from rapmat.calculators import (CALCULATOR_META, Calculators,
+                                    is_calculator_available)
 
     rows = []
     for calc in Calculators:

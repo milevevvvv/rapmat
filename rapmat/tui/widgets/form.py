@@ -1,7 +1,7 @@
-import urwid
-
-from typing import Any
 from dataclasses import dataclass, field
+from typing import Any
+
+import urwid
 
 from rapmat.tui.widgets.dropdown import DropdownSelect
 

@@ -5,11 +5,8 @@ import pytest
 from ase import Atoms
 from ase.build import bulk
 
-from rapmat.core.sanity import (
-    check_sanity,
-    has_close_contacts_pymatgen,
-    min_interatomic_distance,
-)
+from rapmat.core.sanity import (check_sanity, has_close_contacts_pymatgen,
+                                min_interatomic_distance)
 
 
 class TestMinInteratomicDistance:

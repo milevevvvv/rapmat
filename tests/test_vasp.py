@@ -9,14 +9,12 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from ase.calculators.vasp import Vasp
+
 from rapmat.calculators import Calculators
 from rapmat.calculators.factory import load_calculator
 from rapmat.calculators.vasp import build_calculator_vasp
-from rapmat.config import (
-    CalculatorParams,
-    _parse_calc_opt_value,
-    resolve_calculator_config,
-)
+from rapmat.config import (CalculatorParams, _parse_calc_opt_value,
+                           resolve_calculator_config)
 
 # ------------------------------------------------------------------ #
 #  1. _parse_calc_opt_value  (value parser unit tests)

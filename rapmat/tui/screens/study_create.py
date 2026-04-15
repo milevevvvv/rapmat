@@ -1,18 +1,11 @@
 import urwid
 
-from rapmat.tui.widgets.dialog import ModalDialog
-from rapmat.tui.widgets.dropdown import DropdownSelect
-from rapmat.tui.widgets.form import (
-    FormGroup,
-    checkbox_field,
-    dropdown_field,
-    float_field,
-    int_field,
-    text_field,
-)
-
 from rapmat.tui.router import ScreenRouter
 from rapmat.tui.state import AppState
+from rapmat.tui.widgets.dialog import ModalDialog
+from rapmat.tui.widgets.dropdown import DropdownSelect
+from rapmat.tui.widgets.form import (FormGroup, checkbox_field, dropdown_field,
+                                     float_field, int_field, text_field)
 
 
 def _get_calculator_options() -> list[str]:

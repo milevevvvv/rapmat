@@ -1,5 +1,4 @@
 import traceback
-
 from enum import Enum
 from pathlib import Path
 
@@ -14,10 +13,10 @@ class Domain(str, Enum):
 # ------------------------------------------------------------------ #
 
 
-from rapmat.core.generation_worker import (
-    generate_one_structure as _generate_one_structure,
-    init_generation_worker as _init_generation_worker,
-)
+from rapmat.core.generation_worker import \
+    generate_one_structure as _generate_one_structure
+from rapmat.core.generation_worker import \
+    init_generation_worker as _init_generation_worker
 
 
 def run_processing_loop(
@@ -33,17 +32,15 @@ def run_processing_loop(
     import numpy as np
     import torch
     from ase.units import GPa as _GPa
-    from rapmat.calculators.factory import load_calculator
+
     from rapmat.calculators import CalculatorCallback, Calculators
+    from rapmat.calculators.factory import load_calculator
     from rapmat.core.dedup import confirm_duplicates
     from rapmat.core.relaxation import structure_relax
     from rapmat.core.sanity import check_sanity
-    from rapmat.utils.structure import (
-        calculate_thickness,
-        format_spg,
-        standardize_atoms,
-    )
     from rapmat.utils.console import console, err_console
+    from rapmat.utils.structure import (calculate_thickness, format_spg,
+                                        standardize_atoms)
 
     class _ProgressCalcCallback:
 
@@ -403,6 +400,7 @@ def run_generation_loop(
     log_callback=None,
 ) -> int:
     from concurrent.futures import ProcessPoolExecutor, as_completed
+
     from rapmat.utils.console import console, err_console
 
     domain_val = config.get("domain", "bulk")

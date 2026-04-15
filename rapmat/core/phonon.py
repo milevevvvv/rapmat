@@ -1,7 +1,7 @@
-import numpy as np
-
-from ase import Atoms
 from typing import Tuple
+
+import numpy as np
+from ase import Atoms
 from phonopy import Phonopy
 from phonopy.structure.atoms import PhonopyAtoms
 

@@ -1,10 +1,10 @@
-import urwid
-
 from pathlib import Path
 
+import urwid
+
 from rapmat.tui.router import ScreenRouter
-from rapmat.tui.state import AppState
 from rapmat.tui.screens.base_results import BaseResultsScreen, _dyn_stability
+from rapmat.tui.state import AppState
 from rapmat.tui.tasks import BackgroundTask
 from rapmat.tui.widgets.dialog import ModalDialog
 from rapmat.tui.widgets.progress import ProgressPanel

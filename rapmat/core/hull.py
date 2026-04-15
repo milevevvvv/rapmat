@@ -1,15 +1,14 @@
-import numpy as np
-import matplotlib.pyplot as plt
-
 from pathlib import Path
 from typing import Optional
 
+import matplotlib.pyplot as plt
+import numpy as np
 from matplotlib.figure import Figure
 from pymatgen.analysis.phase_diagram import PDEntry, PhaseDiagram
 from pymatgen.core import Composition
-from rapmat.utils.common import parse_system
 
 from rapmat.storage.base import StructureStore
+from rapmat.utils.common import parse_system
 
 # ------------------------------------------------------------------ #
 #  Helpers

@@ -1,9 +1,9 @@
+import warnings
+from typing import Optional, Tuple
+
 import numpy as np
 import spglib
-import warnings
-
 from ase import Atoms
-from typing import Optional, Tuple
 
 
 def _spglib_cell(atoms: Atoms) -> tuple:

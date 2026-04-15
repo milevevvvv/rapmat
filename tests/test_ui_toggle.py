@@ -1,4 +1,5 @@
 import urwid
+
 from rapmat.tui.widgets.form import FormGroup, checkbox_field, text_field
 
 

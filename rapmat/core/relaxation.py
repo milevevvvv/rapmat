@@ -1,8 +1,7 @@
 import warnings
-import numpy as np
-
 from typing import Optional, Tuple, Type
 
+import numpy as np
 from ase import Atoms
 from ase.filters import Filter, FrechetCellFilter
 from ase.optimize import BFGS

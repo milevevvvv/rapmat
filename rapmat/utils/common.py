@@ -1,12 +1,11 @@
 import tempfile
-import chemparse
-
-from typing import Tuple
-from pathlib import Path
-from ase.data import atomic_numbers
 from collections.abc import Generator
 from contextlib import contextmanager
+from pathlib import Path
+from typing import Tuple
 
+import chemparse
+from ase.data import atomic_numbers
 
 from rapmat.config import APP_TMPDIR_SUFFIX
 

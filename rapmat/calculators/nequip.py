@@ -1,7 +1,6 @@
+import subprocess
 import sys
 import warnings
-import subprocess
-
 from pathlib import Path
 
 from rapmat.calculators import CalculatorCallback, ensure_asset
@@ -13,6 +12,7 @@ def build_calculator_nequip_oaml(
     import torch
     import torch._inductor.codecache
     from nequip.ase import NequIPCalculator
+
     from rapmat.config import APP_DATA_DIR
 
     app_dir = APP_DATA_DIR.resolve()

@@ -1,8 +1,8 @@
-import urwid
 import threading
-
 from dataclasses import dataclass, field
 from typing import Callable
+
+import urwid
 
 # ------------------------------------------------------------------ #
 #  Thread-safe progress state
@@ -33,6 +33,7 @@ class TaskProgress:
 
         try:
             from datetime import datetime
+
             from rapmat.config import APP_DATA_DIR
 
             log_dir = APP_DATA_DIR / "logs"

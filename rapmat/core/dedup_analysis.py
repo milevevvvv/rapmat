@@ -1,9 +1,8 @@
-import numpy as np
-
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
+import numpy as np
 from scipy.spatial.distance import pdist, squareform
 
 try:

@@ -1,6 +1,5 @@
-import subprocess
 import importlib.util
-
+import subprocess
 from enum import Enum
 from pathlib import Path
 from typing import Callable, Protocol, runtime_checkable

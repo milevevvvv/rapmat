@@ -1,9 +1,8 @@
 import tomllib
-
 from pathlib import Path
 
-from rapmat.storage.base import StructureStore
 from rapmat.config import APP_CONFIG_DIR, APP_DATA_DIR
+from rapmat.storage.base import StructureStore
 
 _DB_CONFIG_FILE = APP_CONFIG_DIR / "db.toml"
 

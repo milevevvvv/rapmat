@@ -1,6 +1,6 @@
-import urwid
-
 from typing import Callable
+
+import urwid
 
 
 class SelectableRow(urwid.WidgetWrap):

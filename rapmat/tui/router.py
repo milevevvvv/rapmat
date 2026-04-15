@@ -1,6 +1,6 @@
-import urwid
-
 from typing import Protocol, runtime_checkable
+
+import urwid
 
 
 @runtime_checkable

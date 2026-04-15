@@ -1,8 +1,8 @@
 import hashlib
-import numpy as np
-
-from ase import Atoms
 from typing import List
+
+import numpy as np
+from ase import Atoms
 from dscribe.descriptors import SOAP
 
 from rapmat.storage.base import StructureDescriptor

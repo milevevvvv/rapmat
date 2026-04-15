@@ -1,20 +1,13 @@
-import urwid
-
 from pathlib import Path
 
-from rapmat.tui.widgets.form import (
-    FormGroup,
-    checkbox_field,
-    dropdown_field,
-    float_field,
-    text_field,
-    tuple_field,
-)
-from rapmat.tui.widgets.progress import ProgressPanel
+import urwid
 
 from rapmat.tui.router import ScreenRouter
 from rapmat.tui.state import AppState
 from rapmat.tui.tasks import BackgroundTask
+from rapmat.tui.widgets.form import (FormGroup, checkbox_field, dropdown_field,
+                                     float_field, text_field, tuple_field)
+from rapmat.tui.widgets.progress import ProgressPanel
 
 
 def _calc_options() -> list[str]:
@@ -185,12 +178,11 @@ class PhononDispersionScreen:
 
         from ase import Atoms
         from ase.io import read as read_ase_structure
+
         from rapmat.calculators import Calculators
         from rapmat.calculators.factory import load_calculator
-        from rapmat.core.phonon import (
-            structure_calculate_phonons,
-            structure_has_imag_phonon_freq,
-        )
+        from rapmat.core.phonon import (structure_calculate_phonons,
+                                        structure_has_imag_phonon_freq)
         from rapmat.utils.common import workdir_context
 
         class _TaskCalcCallback:
