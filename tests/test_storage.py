@@ -92,18 +92,19 @@ def test_run_lifecycle(tmp_path):
 
 @pytest.fixture
 def mock_study(tmp_path):
-    pass # Replaced by inline creation where structure matters
+    pass  # Replaced by inline creation where structure matters
+
 
 def test_deduplication(tmp_path):
     """is_duplicate should detect nearby relaxed structures."""
     db_path = tmp_path / "test_dedup"
     store = SurrealDBStore.from_path(db_path)
     atoms = bulk("Si", "diamond", a=5.43)
-    
+
     store.create_study("dedup-study", "Si", "bulk", "mattersim")
     run_id = store.create_run(name="dedup-test", study_id="dedup-study")
     store.update_run_config(run_id, {"formula": {"Si": 1}})
-    
+
     store.register_descriptor(
         "test000000000000000000000000000000000000000000000000000000000000", 10
     )
@@ -138,11 +139,11 @@ def test_duplicate_min_energy(tmp_path):
     db_path = tmp_path / "test_dedup_min_energy"
     store = SurrealDBStore.from_path(db_path)
     atoms = bulk("Si", "diamond", a=5.43)
-    
+
     store.create_study("energy-study", "Si", "bulk", "mattersim")
     run_id = store.create_run(name="dedup-energy-test", study_id="energy-study")
     store.update_run_config(run_id, {"formula": {"Si": 1}})
-    
+
     store.register_descriptor(
         "test000000000000000000000000000000000000000000000000000000000000", 10
     )
@@ -194,7 +195,7 @@ def test_add_candidates_batch(tmp_path):
     db_path = tmp_path / "test_batch"
     store = SurrealDBStore.from_path(db_path)
     atoms = bulk("Si", "diamond", a=5.43)
-    
+
     store.create_study("batch-study", "Si", "bulk", "mattersim")
     run_id = store.create_run(name="batch-run", study_id="batch-study")
     store.update_run_config(run_id, {"formula": {"Si": 1}})
@@ -248,7 +249,7 @@ def test_phonon_min_freq_persistence(tmp_path):
     db_path = tmp_path / "test_phonon"
     store = SurrealDBStore.from_path(db_path)
     atoms = bulk("Si", "diamond", a=5.43)
-    
+
     store.create_study("phonon-study", "Si", "bulk", "mattersim")
     run_id = store.create_run(name="phonon-run", study_id="phonon-study")
     store.update_run_config(run_id, {"formula": {"Si": 1}})
@@ -288,7 +289,7 @@ def test_initial_and_final_atoms_preserved(tmp_path):
     """Both initial and final atoms survive the add / update cycle."""
     db_path = tmp_path / "test_dual_atoms"
     store = SurrealDBStore.from_path(db_path)
-    
+
     store.create_study("dual-study", "Si", "bulk", "mattersim")
     run_id = store.create_run(name="dual-run", study_id="dual-study")
     store.update_run_config(run_id, {"formula": {"Si": 1}})
@@ -342,7 +343,7 @@ def test_spg_recomputation(tmp_path):
     """Different symprec values should produce different SPG results for the same atoms."""
     db_path = tmp_path / "test_spg"
     store = SurrealDBStore.from_path(db_path)
-    
+
     store.create_study("spg-study", "Si", "bulk", "mattersim")
     run_id = store.create_run(name="spg-run", study_id="spg-study")
     store.update_run_config(run_id, {"formula": {"Si": 1}})

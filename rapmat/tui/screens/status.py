@@ -1,5 +1,3 @@
-"""Status screen for the Rapmat TUI."""
-
 import urwid
 
 from rapmat.tui.widgets.table import SortableTable
@@ -49,8 +47,6 @@ def _calc_attr(row: dict) -> str:
 
 
 class StatusScreen:
-    """Environment status screen: calculators and paths."""
-
     title = "Status"
 
     def __init__(self, state: "AppState", router: "ScreenRouter") -> None:

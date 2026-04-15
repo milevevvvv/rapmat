@@ -1,27 +1,21 @@
-"""SurrealDB storage backend for structure search and persistence.
-
-Connection modes supported via the sync Python SDK:
-- Embedded persistent: ``file://<path>``
-- Embedded in-memory:  ``mem://``
-- Dedicated server:    ``ws://<host>:<port>/rpc`` (requires username/password)
-"""
-
 import json
 import threading
+import numpy as np
+
 from datetime import datetime
 from pathlib import Path
 from typing import List, Optional, Tuple
 
-import numpy as np
-from filelock import FileLock, Timeout
 from ase import Atoms
 from ase.io.jsonio import decode as ase_decode
 from ase.io.jsonio import encode as ase_encode
+from surrealdb import RecordID, Surreal
+from rich.console import Console
+from filelock import FileLock, Timeout
+
+from rapmat.utils.structure import format_spg
 from rapmat.storage.base import StructureStore
 from rapmat.utils.console import console as default_console
-from rapmat.utils.structure import format_spg
-from rich.console import Console
-from surrealdb import RecordID, Surreal
 
 # ------------------------------------------------------------------ #
 #  Schema DDL (idempotent — safe to run on every connection)
@@ -97,36 +91,16 @@ DEFINE INDEX IF NOT EXISTS idx_eval_struct ON evaluation FIELDS structure;
 
 
 def _as_rows(response) -> list[dict]:
-    """Normalise a SurrealDB query response to a list of row dicts.
-
-    The Python SDK returns results as a flat ``list[dict]``.
-    """
     if isinstance(response, list):
         return [r for r in response if isinstance(r, dict)]
     return []
 
 
 def _record_id(table: str, key: str) -> str:
-    """Build a SurrealDB record-id string, escaping special characters."""
     return f"{table}:⟨{key}⟩"
 
 
 class SurrealDBStore(StructureStore):
-    """Structure storage backend using embedded SurrealDB.
-
-    Tables
-    ------
-    ``study``
-        Phase-diagram study metadata (system, constraints).
-    ``run``
-        Run-level metadata with optional record link to a study.
-    ``structure``
-        Per-structure data with lifecycle status tracking and optional
-        per-descriptor vector columns for ANN deduplication.
-    ``descriptor``
-        Registry of descriptor configurations and their vector column names.
-    """
-
     # ------------------------------------------------------------------ #
     #  Construction / connection
     # ------------------------------------------------------------------ #
@@ -147,7 +121,6 @@ class SurrealDBStore(StructureStore):
         self._db = Surreal(db_url)
         self._query_lock = threading.RLock()
 
-        # Wrap the connection query method to ensure thread safety over the unified websocket
         original_query = self._db.query
 
         def _threadsafe_query(*args, **kwargs):
@@ -174,12 +147,11 @@ class SurrealDBStore(StructureStore):
 
     @classmethod
     def from_path(cls, db_path: Path, **kwargs) -> "SurrealDBStore":
-        """Create a persistent store backed by a directory on disk."""
         db_path.mkdir(parents=True, exist_ok=True)
-        
+
         lock_path = db_path / "rapmat.lock"
         file_lock = FileLock(lock_path, timeout=2.0)
-        
+
         try:
             file_lock.acquire()
         except Timeout:
@@ -205,28 +177,6 @@ class SurrealDBStore(StructureStore):
         dim: int,
         meta: Optional[dict] = None,
     ) -> str:
-        """Register a descriptor configuration and ensure its vector column exists.
-
-        Creates (idempotently) a per-descriptor column on ``structure`` with a
-        fixed dimension, then records metadata in the
-        ``descriptor`` table.  Sets ``_active_vec_col`` so all subsequent
-        vector operations use this column by default.
-
-        Parameters
-        ----------
-        desc_id
-            Full descriptor id string (from ``StructureDescriptor.descriptor_id()``).
-        dim
-            Vector dimension for this descriptor configuration.
-        meta
-            Optional extra metadata (e.g. ``{"type": "SOAP", "species": [...]}``)
-            stored in the ``descriptor`` table.
-
-        Returns
-        -------
-        str
-            The column name (``vec_{desc_id[:12]}``).
-        """
         col = f"vec_{desc_id[:12]}"
         m = meta or {}
 
@@ -254,11 +204,6 @@ class SurrealDBStore(StructureStore):
         return col
 
     def _vec_col(self, override: str | None = None) -> str:
-        """Return the active vector column name, with optional override.
-
-        Raises ``RuntimeError`` if no column has been registered and no
-        override is provided.
-        """
         col = override or self._active_vec_col
         if not col:
             raise RuntimeError(
@@ -287,8 +232,7 @@ class SurrealDBStore(StructureStore):
         study = self.get_study(study_id)
         if study is None:
             raise ValueError(f"Study '{study_id}' not found.")
-        
-        # Merge batch config with study config
+
         batch_cfg = config or {}
         run_elements = set(batch_cfg.get("formula", {}).keys())
         study_elements = set(study["system"].split("-"))
@@ -319,11 +263,11 @@ class SurrealDBStore(StructureStore):
         row = rows[0]
         study_val = row.get("study")
         study_id = _extract_id(study_val) if study_val else None
-        
+
         batch_cfg = json.loads(row.get("batch_config_json", "{}"))
         study_cfg = {}
         domain = ""
-        
+
         if study_id:
             study = self.get_study(study_id)
             if study:
@@ -331,8 +275,7 @@ class SurrealDBStore(StructureStore):
                 domain = study.get("domain", "")
                 system = study.get("system", "")
                 calculator = study.get("calculator", "")
-                
-        # Merge study config with batch config (batch overrides study)
+
         merged_config = {**study_cfg, **batch_cfg}
         if domain:
             merged_config["domain"] = domain
@@ -358,14 +301,12 @@ class SurrealDBStore(StructureStore):
         )
 
     def delete_run(self, run_name: str) -> None:
-        """Permanently delete a run and all associated structures."""
         rid = _record_id("run", run_name)
         self._db.query(f"DELETE evaluation WHERE run = {rid}")
         self._db.query(f"DELETE structure WHERE run = {rid}")
         self._db.query(f"DELETE {rid}")
 
     def list_runs(self) -> List[dict]:
-        # For listing, we do a basic fetch without full config merges to be fast
         rows = _as_rows(self._db.query("SELECT * FROM run"))
         results = []
         for row in rows:
@@ -398,12 +339,6 @@ class SurrealDBStore(StructureStore):
     # ------------------------------------------------------------------ #
 
     def claim_run(self, run_name: str, worker_id: str) -> bool:
-        """Atomically claim a run for processing.
-
-        Succeeds only when ``run_status`` is ``"pending"``,
-        ``"generating"``, or ``"failed"`` (or ``NONE`` for legacy runs).
-        Returns ``True`` if this worker now owns the run.
-        """
         rows = _as_rows(
             self._db.query(
                 f"UPDATE {_record_id('run', run_name)} SET "
@@ -421,7 +356,6 @@ class SurrealDBStore(StructureStore):
         return len(rows) > 0
 
     def release_run(self, run_name: str, final_status: str = "completed") -> None:
-        """Release a claimed run, setting its final status."""
         self._db.query(
             f"UPDATE {_record_id('run', run_name)} SET "
             "run_status = $st, worker_id = NONE, heartbeat = NONE",
@@ -429,7 +363,6 @@ class SurrealDBStore(StructureStore):
         )
 
     def update_heartbeat(self, run_name: str, worker_id: str) -> None:
-        """Refresh the heartbeat timestamp for a claimed run."""
         self._db.query(
             f"UPDATE {_record_id('run', run_name)} SET heartbeat = $ts "
             "WHERE worker_id = $wid",
@@ -437,17 +370,12 @@ class SurrealDBStore(StructureStore):
         )
 
     def set_run_status(self, run_name: str, status: str) -> None:
-        """Set the run_status field directly (e.g. generating -> processing)."""
         self._db.query(
             f"UPDATE {_record_id('run', run_name)} SET run_status = $st",
             {"st": status},
         )
 
     def reclaim_stale_runs(self, timeout_minutes: int = 10) -> list[str]:
-        """Reset runs whose heartbeat has expired.
-
-        Returns the names of reclaimed runs.
-        """
         cutoff = datetime.now().timestamp() - timeout_minutes * 60
         cutoff_iso = datetime.fromtimestamp(cutoff).isoformat()
         rows = _as_rows(
@@ -508,7 +436,6 @@ class SurrealDBStore(StructureStore):
         }
 
     def update_study(self, study_id: str, fields: dict) -> None:
-        """Update fields on a study record."""
         set_exprs = []
         params = {}
         if "config" in fields:
@@ -525,8 +452,7 @@ class SurrealDBStore(StructureStore):
         )
 
     def delete_study(self, study_id: str) -> None:
-        """Permanently delete a study and all associated runs and structures."""
-        sid = _record_id('study', study_id)
+        sid = _record_id("study", study_id)
         self._db.query(f"DELETE evaluation WHERE run.study = {sid}")
         self._db.query(f"DELETE structure WHERE run.study = {sid}")
         self._db.query(f"DELETE run WHERE study = {sid}")
@@ -621,8 +547,6 @@ class SurrealDBStore(StructureStore):
             )
         return len(candidates)
 
-    # -- ABC: add_structures -------------------------------------------
-
     def add_structures(self, run_name: str, structures: List[dict]) -> int:
         if not structures:
             return 0
@@ -700,21 +624,6 @@ class SurrealDBStore(StructureStore):
         run_name: str,
         placeholders: List[Tuple[str, int, int]],
     ) -> int:
-        """Bulk-insert placeholder records for resumable generation.
-
-        Parameters
-        ----------
-        run_name : str
-            The run these placeholders belong to.
-        placeholders : list of (candidate_id, spg, fu)
-            Each tuple gives the deterministic record id, space group
-            number, and formula-unit count to generate later.
-
-        Returns
-        -------
-        int
-            Number of placeholders inserted.
-        """
         if not placeholders:
             return 0
         ts = datetime.now().isoformat()
@@ -750,7 +659,6 @@ class SurrealDBStore(StructureStore):
         return len(placeholders)
 
     def get_pending_generation(self, run_name: str) -> List[dict]:
-        """Fetch all placeholder records still awaiting generation."""
         rows = _as_rows(
             self._db.query(
                 "SELECT * FROM structure WHERE "
@@ -773,7 +681,6 @@ class SurrealDBStore(StructureStore):
         vector: Optional[np.ndarray] = None,
         vec_col: Optional[str] = None,
     ) -> None:
-        """Promote a placeholder to ``generated`` with actual atoms data."""
         updates: dict = {
             "status": "generated",
             "formula": atoms.get_chemical_formula(),
@@ -789,7 +696,6 @@ class SurrealDBStore(StructureStore):
         )
 
     def discard_generation_placeholder(self, struct_id: str) -> None:
-        """Mark a placeholder as ``discarded`` (incompatible spg, etc.)."""
         self._db.query(
             f"UPDATE {_record_id('structure', struct_id)} MERGE $data",
             {
@@ -865,15 +771,6 @@ class SurrealDBStore(StructureStore):
         dropped_ids: list[str],
         kept_ids: list[str],
     ) -> None:
-        """Persist dedup analysis results by setting the ``duplicate`` field.
-
-        Parameters
-        ----------
-        dropped_ids
-            Structure ids to mark as ``duplicate = true``.
-        kept_ids
-            Structure ids to mark as ``duplicate = false``.
-        """
         ts = datetime.now().isoformat()
         BATCH = 500
         for i in range(0, len(dropped_ids), BATCH):
@@ -1147,8 +1044,6 @@ class SurrealDBStore(StructureStore):
         )
         return True
 
-    # -- ABC: find_neighbors --------------------------------------------
-
     def find_neighbors(
         self,
         vector: np.ndarray,
@@ -1214,12 +1109,6 @@ class SurrealDBStore(StructureStore):
         run_id: str,
         statuses: tuple = ("relaxed",),
     ) -> List[dict]:
-        """Load structures for offline analysis (dedup simulation, benchmarking).
-
-        Returns only relational data and decoded ASE Atoms -- no vectors.
-        Callers are expected to compute descriptor vectors in-memory using
-        whichever descriptor configuration they want to benchmark.
-        """
         status_list = ", ".join(f"'{s}'" for s in statuses)
         where = f"run = {_record_id('run', run_id)} " f"AND status IN [{status_list}]"
 
@@ -1302,8 +1191,6 @@ class SurrealDBStore(StructureStore):
             )
         return results
 
-    # -- ABC: get_structures --------------------------------------------
-
     def get_structures(
         self,
         run_name: str,
@@ -1381,12 +1268,6 @@ class SurrealDBStore(StructureStore):
         energy_total: float,
         min_phonon_freq: Optional[float] = None,
     ) -> str:
-        """Insert or update an evaluation result for a structure.
-
-        The record id is derived from the structure id, calculator name,
-        and config hash so that re-running with the same settings is an
-        upsert (supports resume).
-        """
         import hashlib
 
         config_hash = hashlib.sha256(config_json.encode()).hexdigest()[:12]
@@ -1414,7 +1295,6 @@ class SurrealDBStore(StructureStore):
     def has_evaluation(
         self, structure_id: str, calculator: str, config_json: str
     ) -> bool:
-        """Check whether an evaluation record already exists (for resume)."""
         import hashlib
 
         config_hash = hashlib.sha256(config_json.encode()).hexdigest()[:12]
@@ -1429,7 +1309,6 @@ class SurrealDBStore(StructureStore):
         run_name: str,
         calculator: Optional[str] = None,
     ) -> None:
-        """Delete evaluation records for a run, optionally filtered by calculator."""
         where = f"run = {_record_id('run', run_name)}"
         if calculator is not None:
             where += f" AND calculator = '{calculator}'"
@@ -1440,7 +1319,6 @@ class SurrealDBStore(StructureStore):
         run_name: str,
         calculator: Optional[str] = None,
     ) -> List[dict]:
-        """Return evaluation records for a run, optionally filtered by calculator."""
         where = f"run = {_record_id('run', run_name)}"
         if calculator is not None:
             where += f" AND calculator = '{calculator}'"
@@ -1465,15 +1343,14 @@ class SurrealDBStore(StructureStore):
     # ------------------------------------------------------------------ #
 
     def compact_files_if_needed(self, threshold: int = 100) -> None:
-        """No-op — SurrealDB manages storage compaction internally."""
+        return None
 
     def close(self) -> None:
         try:
             self._db.close()
         except Exception:
             pass
-        
-        # Release the file lock safely if one is held by the store
+
         if hasattr(self, "_file_lock") and getattr(self._file_lock, "is_locked", False):
             try:
                 self._file_lock.release()
@@ -1487,11 +1364,6 @@ class SurrealDBStore(StructureStore):
 
 
 def _extract_id(record_id) -> str:
-    """Extract the bare id string from a SurrealDB record-id.
-
-    The SDK returns ``RecordID`` objects with ``.table_name`` and ``.id``
-    attributes.  Also handles plain strings like ``"run:⟨al-run⟩"``.
-    """
     if record_id is None:
         return ""
     if isinstance(record_id, RecordID):

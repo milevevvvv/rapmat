@@ -1,9 +1,6 @@
-"""Dedup analysis screen for the Rapmat TUI."""
+import urwid
 
 from pathlib import Path
-
-
-import urwid
 
 from rapmat.tui.widgets.form import (
     FormGroup,
@@ -30,8 +27,6 @@ _COLLISION_COLS = [
 
 
 class DedupScreen:
-    """Deduplication analysis screen."""
-
     title = "Dedup Analysis"
 
     @property
@@ -380,7 +375,6 @@ class DedupScreen:
             format_row=lambda r: [r["stage"], r["kept"], r["change"], r["notes"]],
         )
 
-        # Percentile table
         perc_text_lines = ["Survival Percentile Thresholds:"]
         for p, thresh, kept in d["percentiles"]:
             perc_text_lines.append(
@@ -399,7 +393,6 @@ class DedupScreen:
             (urwid.Text(("details", "\n".join(perc_text_lines))), ("pack", None)),
         ]
 
-        # Collision table
         if d["use_pymatgen"] or d["use_forces"]:
             coll_rows = []
             if d["use_pymatgen"] and sim.pymatgen_comparisons > 0:
@@ -447,7 +440,6 @@ class DedupScreen:
                     ]
                 )
 
-        # "Apply to DB" button
         apply_btn = urwid.AttrMap(
             urwid.Button("Apply to DB [a]", on_press=lambda _: self._apply_to_db()),
             "menu_item",
@@ -493,7 +485,6 @@ class DedupScreen:
     # ------------------------------------------------------------------ #
 
     def _apply_to_db(self) -> None:
-        """Persist dedup simulation results to the database."""
         if self._result_data is None:
             return
         sim = self._result_data.get("sim")

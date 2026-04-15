@@ -14,15 +14,6 @@ def load_calculator(
     config: dict | None = None,
     callback: CalculatorCallback | None = None,
 ):
-    """Instantiate an ASE calculator by name.
-
-    *config* is an optional dict of calculator-specific settings
-    (e.g. VASP INCAR parameters resolved from a TOML file).
-    It is only used by calculators that accept arbitrary keyword config.
-
-    *callback* is an optional :class:`CalculatorCallback` used to report
-    installation / download progress to the caller (e.g. TUI log view).
-    """
     try:
         match calculator_name.value:
             case Calculators.MATTERSIM.value:

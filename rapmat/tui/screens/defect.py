@@ -1,5 +1,3 @@
-"""Defect generation screen for the Rapmat TUI."""
-
 import urwid
 
 from rapmat.tui.widgets.dialog import ModalDialog
@@ -15,8 +13,6 @@ from rapmat.tui.state import AppState
 
 
 class DefectScreen:
-    """Point defect generation screen."""
-
     title = "Defect Generation"
 
     def __init__(self, state: "AppState", router: "ScreenRouter") -> None:

@@ -1,15 +1,14 @@
 import warnings
+import numpy as np
+
 from typing import Optional, Tuple, Type
 
-import numpy as np
 from ase import Atoms
 from ase.filters import Filter, FrechetCellFilter
 from ase.optimize import BFGS
 
 
-
 def _max_force(atoms) -> float:
-    """Maximum per-atom force norm."""
     return float(np.max(np.linalg.norm(atoms.get_forces(), axis=1)))
 
 
@@ -28,41 +27,10 @@ def structure_relax(
     cancel_flag: list[bool] | None = None,
     progress_callback=None,
 ) -> Tuple[bool, Atoms]:
-    """Relax an atomic structure using an ASE optimizer with a cell filter.
-
-    Iteratively minimises forces on ``atoms`` until either
-    ``force_conv_crit`` is satisfied, ``steps_max`` is reached, or the
-    maximum per-atom force exceeds ``forces_break`` (early abort).
-
-    Args:
-        atoms: Structure to relax.  Must have a calculator attached.
-        force_conv_crit: Force convergence criterion in eV/Å.
-        steps_max: Maximum number of optimisation steps.
-        opt_logfile: Path for the optimizer log file (``None`` = silent).
-        mask: Voigt-notation boolean mask forwarded to *filter*
-            (e.g. ``[1,1,0,0,0,1]`` to fix the *z*-cell vector).
-        filter_cls: Cell-filter class applied before optimisation.
-        forces_break: If the max per-atom force exceeds this value during
-            optimisation the run is aborted and ``(False, atoms)`` is
-            returned immediately.
-        optimizer_cls: ASE optimizer class to use (default :class:`BFGS`).
-        cancel_flag: A 1-element list containing a boolean. If it becomes
-            ``[True]`` during optimisation, the run is aborted early.
-        progress_callback: A callable invoked as
-            ``progress_callback(step: int, max_steps: int, msg: str)``
-            per iteration.
-
-    Returns:
-        A ``(converged, relaxed_atoms)`` tuple.
-
-    Raises:
-        RuntimeError: If no calculator is set.
-    """
     import torch
 
     if atoms.calc is None:
         raise RuntimeError("No calculator set for the structure.")
-
 
     atoms_cf = filter_cls(atoms, mask=mask, scalar_pressure=scalar_pressure)
 

@@ -32,7 +32,13 @@ def loop_env(tmp_path):
         "dedup_threshold": 1e-2,
         "symprec": 1e-3,
     }
-    store.create_study(study_id=f"study-{run_name}", system="Cu", domain="bulk", calculator="MATTERSIM", config=config)
+    store.create_study(
+        study_id=f"study-{run_name}",
+        system="Cu",
+        domain="bulk",
+        calculator="MATTERSIM",
+        config=config,
+    )
     store.create_run(name=run_name, study_id=f"study-{run_name}")
 
     zero_vec = np.zeros(descriptor.dimension(), dtype=np.float32)
@@ -113,7 +119,13 @@ def test_candidate_dedup_skips_relaxation(mock_load_calc, tmp_path):
         "dedup_threshold": 5.0,
         "symprec": 1e-3,
     }
-    store.create_study(study_id=f"study-{run_name}", system="Cu", domain="bulk", calculator="MATTERSIM", config=config)
+    store.create_study(
+        study_id=f"study-{run_name}",
+        system="Cu",
+        domain="bulk",
+        calculator="MATTERSIM",
+        config=config,
+    )
     store.create_run(name=run_name, study_id=f"study-{run_name}")
 
     cu = bulk("Cu", "fcc", a=3.615)
@@ -164,7 +176,13 @@ def test_dedup_flag_disabled_keeps_duplicates(mock_load_calc, tmp_path):
         "dedup_threshold": 5.0,
         "symprec": 1e-3,
     }
-    store.create_study(study_id=f"study-{run_name}", system="Cu", domain="bulk", calculator="MATTERSIM", config=config)
+    store.create_study(
+        study_id=f"study-{run_name}",
+        system="Cu",
+        domain="bulk",
+        calculator="MATTERSIM",
+        config=config,
+    )
     store.create_run(name=run_name, study_id=f"study-{run_name}")
 
     cu = bulk("Cu", "fcc", a=3.615)
@@ -213,7 +231,13 @@ def test_processing_loop_convergence_filter(mock_load_calc, tmp_path):
         "dedup_threshold": 1e-2,
         "symprec": 1e-3,
     }
-    store.create_study(study_id=f"study-{run_name}", system="Cu", domain="bulk", calculator="MATTERSIM", config=config)
+    store.create_study(
+        study_id=f"study-{run_name}",
+        system="Cu",
+        domain="bulk",
+        calculator="MATTERSIM",
+        config=config,
+    )
     store.create_run(name=run_name, study_id=f"study-{run_name}")
 
     zero_vec = np.zeros(descriptor.dimension(), dtype=np.float32)

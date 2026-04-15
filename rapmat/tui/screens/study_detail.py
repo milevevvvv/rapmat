@@ -1,5 +1,3 @@
-"""Study detail screen for the Rapmat TUI."""
-
 import urwid
 
 from rapmat.tui.widgets.table import SortableTable
@@ -37,8 +35,6 @@ def _formula_str(run: dict) -> str:
 
 
 class StudyDetailScreen:
-    """Phase diagram study detail screen."""
-
     title = "Study Detail"
 
     @property
@@ -127,8 +123,7 @@ class StudyDetailScreen:
             generated = counts.get("generated", 0)
             total = relaxed + generated
             run_type = _classify_run(run, elements)
-            
-            # Status display
+
             st = run.get("run_status", "pending")
             wid = run.get("worker_id")
             if wid and st in ("generating", "processing"):
@@ -162,7 +157,6 @@ class StudyDetailScreen:
             title="Run Configuration",
         )
 
-        # Endpoint completeness check
         n_elements = len(elements)
         endpoint_elements: set[str] = set()
         for run in runs:
@@ -173,7 +167,10 @@ class StudyDetailScreen:
 
         if n_elements < 2:
             status_text = urwid.Text(
-                ("details", "  Single-element system. Phase analysis shows energy ranking.")
+                (
+                    "details",
+                    "  Single-element system. Phase analysis shows energy ranking.",
+                )
             )
         elif missing:
             status_text = urwid.Text(
@@ -185,7 +182,10 @@ class StudyDetailScreen:
             )
         else:
             status_text = urwid.Text(
-                ("success", "  All endpoints present. Phase analysis available (table only).")
+                (
+                    "success",
+                    "  All endpoints present. Phase analysis available (table only).",
+                )
             )
 
         body = urwid.Pile(
@@ -213,9 +213,11 @@ class StudyDetailScreen:
     def _on_run_focus_change(self, run: dict | None) -> None:
         if getattr(self, "_details_content", None) is None:
             return
-            
+
         if run is None:
-            self._details_content.original_widget = urwid.Text([("details", "No run selected.")])
+            self._details_content.original_widget = urwid.Text(
+                [("details", "No run selected.")]
+            )
         else:
             config = run.get("config", {})
             self._details_content.original_widget = build_config_grid(config)
@@ -228,15 +230,13 @@ class StudyDetailScreen:
 
     def _on_unlock_run(self, run_name: str) -> None:
         self._state.store.release_run(run_name, "pending")
-        # Force refresh
         if self._placeholder:
             self._placeholder.original_widget = self._build_widget()
 
     def _open_delete_modal(self, run_name: str) -> None:
         if self._placeholder is None:
             return
-            
-        # Check if the run is active
+
         run_data = self._state.store.get_run_metadata(run_name)
         status = run_data.get("run_status") if run_data else "pending"
         worker_id = run_data.get("worker_id") if run_data else None
@@ -271,6 +271,7 @@ class StudyDetailScreen:
             return None
         if key in ("n", "N"):
             from rapmat.tui.screens.csp_search import CSPSearchScreen
+
             self._router.push(CSPSearchScreen(self._state, self._router))
             return None
         if key in ("r", "R"):

@@ -1,10 +1,3 @@
-"""Lightweight generation worker for ProcessPoolExecutor.
-
-This module is intentionally kept free of heavy imports (torch, MatterSim,
-CUDA-backed packages) so that subprocess workers on Windows (which use the
-``spawn`` start method) do not duplicate GPU contexts or load MLIP models.
-"""
-
 _worker_descriptor = None
 
 
@@ -15,7 +8,6 @@ def init_generation_worker(
     l_max: int,
     periodic: bool,
 ) -> None:
-    """Process initializer: create SOAPDescriptor in worker process."""
     global _worker_descriptor
     from rapmat.storage.descriptors import SOAPDescriptor
 
@@ -35,20 +27,6 @@ def generate_one_structure(
     seed: int | None = None,
     max_count: int = 10,
 ) -> tuple:
-    """Pure CPU work: pyxtal generation + SOAP compute.
-
-    Returns ``(status, struct_id, atoms, vector)``.
-
-    Parameters
-    ----------
-    seed
-        If provided, passed as ``random_state`` to PyXtal's
-        ``from_random()`` for reproducible generation.
-    max_count
-        Maximum number of internal PyXtal placement attempts per structure.
-        Lower values prevent hangs on difficult space groups at the cost of
-        a slightly higher discard rate.  Default ``10``.
-    """
     import pyxtal
 
     global _worker_descriptor

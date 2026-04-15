@@ -16,7 +16,10 @@ def build_calculator_upet(
     version = config.pop("version", "1.0.0")
     device = config.pop("device", "cuda" if torch.cuda.is_available() else "cpu")
 
-    _notify(callback, f"Loading uPET model {model} v{version} (may download on first use)...")
+    _notify(
+        callback,
+        f"Loading uPET model {model} v{version} (may download on first use)...",
+    )
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")

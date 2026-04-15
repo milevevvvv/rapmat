@@ -1,4 +1,5 @@
 import traceback
+
 from enum import Enum
 from pathlib import Path
 
@@ -29,9 +30,6 @@ def run_processing_loop(
     progress_callback=None,
     cancel_flag: list[bool] | None = None,
 ):
-    """Common processing loop for running relaxations and filtering.
-
-    """
     import numpy as np
     import torch
     from ase.units import GPa as _GPa
@@ -40,11 +38,16 @@ def run_processing_loop(
     from rapmat.core.dedup import confirm_duplicates
     from rapmat.core.relaxation import structure_relax
     from rapmat.core.sanity import check_sanity
-    from rapmat.utils.structure import calculate_thickness, format_spg, standardize_atoms
+    from rapmat.utils.structure import (
+        calculate_thickness,
+        format_spg,
+        standardize_atoms,
+    )
     from rapmat.utils.console import console, err_console
 
     class _ProgressCalcCallback:
         """Adapter: forwards calculator status to the TUI progress callback."""
+
         def on_status(self, message: str) -> None:
             if progress_callback:
                 progress_callback(0, 0, message)
@@ -124,8 +127,9 @@ def run_processing_loop(
             for attempt in range(3):
                 structure = candidate["atoms"].copy()
                 from rapmat.calculators import cleanup_calculator_files
+
                 cleanup_calculator_files(calculator)
-                
+
                 try:
                     structure.calc = calculator
                     structure.info["initial_spg"] = format_spg(
@@ -212,7 +216,7 @@ def run_processing_loop(
                     relaxed_structure.info["initial_spg"] = structure.info[
                         "initial_spg"
                     ]
-                    
+
                     relaxed_structure.info["final_spg"] = format_spg(
                         relaxed_structure, symprec=symprec
                     )
@@ -339,17 +343,22 @@ def run_processing_loop(
                             torch.cuda.empty_cache()
                     except Exception:
                         pass
-                    
-                    _report(f"Reloading calculator {calculator_name} after error (attempt {attempt + 1})...")
+
+                    _report(
+                        f"Reloading calculator {calculator_name} after error (attempt {attempt + 1})..."
+                    )
                     try:
                         calculator = load_calculator(
-                            Calculators(calculator_name), config=calculator_config,
+                            Calculators(calculator_name),
+                            config=calculator_config,
                             callback=_calc_cb,
                         )
                         _report(f"Calculator {calculator_name} reloaded successfully.")
                     except Exception as reload_ex:
                         reload_tb = traceback.format_exc()
-                        err_console.print(f"[red]Calculator reload failed: {reload_ex}[/red]")
+                        err_console.print(
+                            f"[red]Calculator reload failed: {reload_ex}[/red]"
+                        )
                         err_console.print(f"[dim]{reload_tb}[/dim]")
                         _report(f"CRITICAL ERROR: Reload failed: {reload_ex}")
                         _report(f"Reload traceback:\n{reload_tb}")
@@ -394,10 +403,6 @@ def run_generation_loop(
     cancel_flag: list[bool] | None = None,
     log_callback=None,
 ) -> int:
-    """Generate structures from DB placeholders (status='generating').
-
-    Returns the number of successfully generated structures.
-    """
     from concurrent.futures import ProcessPoolExecutor, as_completed
     from rapmat.utils.console import console, err_console
 
@@ -456,12 +461,15 @@ def run_generation_loop(
                 store.discard_generation_placeholder(struct_id)
                 discarded += 1
             case "error":
-                err_console.print(f"[red]Structure for group {spg} / fu {fu} failed[/red]")
+                err_console.print(
+                    f"[red]Structure for group {spg} / fu {fu} failed[/red]"
+                )
                 store.discard_generation_placeholder(struct_id)
                 errors += 1
 
     if workers <= 1:
         import rapmat.core.generation_worker as _gw
+
         _gw._worker_descriptor = descriptor
 
         for counter, ph in enumerate(placeholders, start=1):
@@ -479,7 +487,13 @@ def run_generation_loop(
                 (run_seed + counter) % (2**32) if run_seed is not None else None
             )
             status, struct_id, atoms, vec = _generate_one_structure(
-                ph["id"], spg, fu, elements, formula_values, search_dim, thickness_cutoff,
+                ph["id"],
+                spg,
+                fu,
+                elements,
+                formula_values,
+                search_dim,
+                thickness_cutoff,
                 seed=struct_seed,
                 max_count=max_count,
             )
@@ -514,11 +528,7 @@ def run_generation_loop(
                     formula_values,
                     search_dim,
                     thickness_cutoff,
-                    seed=(
-                        (run_seed + idx) % (2**32)
-                        if run_seed is not None
-                        else None
-                    ),
+                    seed=((run_seed + idx) % (2**32) if run_seed is not None else None),
                     max_count=max_count,
                 ): ph
                 for idx, ph in enumerate(placeholders, start=1)
@@ -536,12 +546,15 @@ def run_generation_loop(
 
                 status, struct_id, atoms, vec = future.result()
                 ph = futures[future]
-                _handle_result(status, struct_id, atoms, vec, ph["gen_spg"], ph["gen_fu"])
+                _handle_result(
+                    status, struct_id, atoms, vec, ph["gen_spg"], ph["gen_fu"]
+                )
                 _advance(counter)
 
                 if counter % 100 == 0:
-                    _log(f"Generated {counter}/{n_placeholders} (ok={generated}, disc={discarded}, err={errors})")
+                    _log(
+                        f"Generated {counter}/{n_placeholders} (ok={generated}, disc={discarded}, err={errors})"
+                    )
 
     _log(f"Generation finished: {generated} ok, {discarded} discarded, {errors} errors")
     return generated
-

@@ -1,5 +1,3 @@
-"""DB settings screen for the Rapmat TUI."""
-
 import urwid
 
 from rapmat.config import APP_DATA_DIR
@@ -18,9 +16,8 @@ _KEY_TO_MODE = {v: k for k, v in _MODE_TO_KEY.items()}
 
 _DEFAULT_SURREAL_PATH = str(APP_DATA_DIR / "surrealdb")
 
-class DbSettingsScreen:
-    """Database backend configuration screen."""
 
+class DbSettingsScreen:
     title = "DB Settings"
 
     def __init__(self, state: "AppState", router: "ScreenRouter") -> None:
@@ -71,7 +68,6 @@ class DbSettingsScreen:
     # ------------------------------------------------------------------ #
 
     def _load(self) -> tuple[str, dict]:
-        """Return ``(mode_key, server_dict)`` from persisted config."""
         from rapmat.db_config import load_db_config
 
         full = load_db_config()
@@ -187,7 +183,6 @@ class DbSettingsScreen:
         return urwid.Padding(scrollable, left=2, right=2)
 
     def _rebuild_form(self, mode_key: str) -> None:
-        """Swap the form pile contents for the selected mode."""
         if self._form_pile is None:
             return
 

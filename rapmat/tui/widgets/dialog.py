@@ -1,21 +1,9 @@
-"""Modal dialog widgets for the Rapmat TUI."""
+import urwid
 
 from typing import Callable, Sequence
 
-import urwid
-
 
 class ModalDialog(urwid.WidgetWrap):
-    """Overlay-based modal dialog.
-
-    Emits a ``"close"`` signal with a boolean payload:
-    ``True`` when the user confirms / clicks OK, ``False`` when they
-    cancel or press Escape.
-
-    Use the static constructors ``confirm()`` and ``info()`` rather than
-    instantiating directly.
-    """
-
     signals = ["close"]
 
     def __init__(
@@ -52,20 +40,6 @@ class ModalDialog(urwid.WidgetWrap):
         parent: urwid.Widget,
         on_close: Callable[[bool], None],
     ) -> "ModalDialog":
-        """Build a Yes / No confirmation dialog.
-
-        Parameters
-        ----------
-        title:
-            Dialog title shown in the ``LineBox`` border.
-        message:
-            Body text.
-        parent:
-            Widget currently displayed behind the dialog (used as the
-            ``Overlay`` background).
-        on_close:
-            Callback receiving ``True`` (Yes) or ``False`` (No/Esc).
-        """
         dlg: ModalDialog | None = None
 
         def _yes(btn: urwid.Button) -> None:
@@ -116,13 +90,6 @@ class ModalDialog(urwid.WidgetWrap):
         parent: urwid.Widget,
         on_close: Callable[[], None],
     ) -> "ModalDialog":
-        """Build a simple informational dialog with an OK button.
-
-        Parameters
-        ----------
-        on_close:
-            Called when the user dismisses the dialog.
-        """
         dlg: ModalDialog | None = None
 
         def _ok(btn: urwid.Button) -> None:
@@ -163,24 +130,6 @@ class ModalDialog(urwid.WidgetWrap):
         actions: Sequence[tuple[str, Callable[[], None]]],
         esc_action_index: int = -1,
     ) -> "ModalDialog":
-        """Build an error dialog with multiple named action buttons.
-
-        Parameters
-        ----------
-        title:
-            Dialog title shown in the ``LineBox`` border.
-        message:
-            Body text (may include markup tuples for ``urwid.Text``).
-        parent:
-            Widget currently displayed behind the dialog.
-        actions:
-            Sequence of ``(label, callback)`` pairs.  A button is
-            created for each entry; pressing it emits ``"close"``
-            and invokes *callback*.
-        esc_action_index:
-            Index into *actions* that Escape triggers.  Defaults to
-            the last action.
-        """
         dlg: ModalDialog | None = None
 
         def _make_handler(cb: Callable[[], None]):
@@ -234,23 +183,6 @@ class ModalDialog(urwid.WidgetWrap):
         on_cancel: "Callable[[], None] | None" = None,
         default: str = "",
     ) -> "ModalDialog":
-        """Build a dialog with a text input field and Save / Cancel buttons.
-
-        Parameters
-        ----------
-        title:
-            Dialog title.
-        message:
-            Label text above the input field.
-        parent:
-            Widget behind the dialog overlay.
-        on_save:
-            Callback receiving the entered text when Save is pressed.
-        on_cancel:
-            Optional callback when Cancel or Esc is pressed.
-        default:
-            Default text to pre-fill the input.
-        """
         dlg: ModalDialog | None = None
         edit = urwid.Edit(caption="  ", edit_text=default)
 
@@ -297,5 +229,5 @@ class ModalDialog(urwid.WidgetWrap):
                 return None
             return original_keypress(size, key)
 
-        dlg.keypress = _keypress  # type: ignore[method-assign]
+        dlg.keypress = _keypress
         return dlg

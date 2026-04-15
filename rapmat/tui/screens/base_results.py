@@ -1,12 +1,10 @@
-"""Base results table viewer for Rapmat TUI."""
-
 import math
-from pathlib import Path
-from typing import Optional
-
 import urwid
+
 from ase import Atoms
 from ase.io import write as write_ase_structure
+from pathlib import Path
+from typing import Optional
 
 from rapmat.tui.widgets.table import SortableTable
 from rapmat.tui.router import ScreenRouter
@@ -15,7 +13,6 @@ from rapmat.tui.tasks import BackgroundTask
 
 
 def _dyn_stability(result: dict, phonon_cutoff: float | None) -> Optional[bool]:
-    """Derive dynamical stability from min_phonon_freq + cutoff."""
     min_freq = result.get("min_phonon_freq")
     if min_freq is not None and phonon_cutoff is not None:
         try:
@@ -72,16 +69,22 @@ class _ResultsFooter(urwid.WidgetWrap):
 
 
 class _SaveDialog(urwid.WidgetWrap):
-    """Inline save dialog overlaid on the results frame body."""
-
     signals = ["close"]
 
-    def __init__(self, parent: urwid.Widget, on_save, num_filtered: int = 1, default_dir: str = "") -> None:
+    def __init__(
+        self,
+        parent: urwid.Widget,
+        on_save,
+        num_filtered: int = 1,
+        default_dir: str = "",
+    ) -> None:
         self._on_save = on_save
 
         self._scope_group: list = []
         scope_rb1 = urwid.RadioButton(self._scope_group, "Focused structure only")
-        self._save_all_rb = urwid.RadioButton(self._scope_group, f"All {num_filtered} filtered structures")
+        self._save_all_rb = urwid.RadioButton(
+            self._scope_group, f"All {num_filtered} filtered structures"
+        )
 
         self._fmt_group: list = []
         cif_rb = urwid.RadioButton(self._fmt_group, "cif")
@@ -151,8 +154,6 @@ class _SaveDialog(urwid.WidgetWrap):
 
 
 class BaseResultsScreen:
-    """Base tabular viewer for handling structures."""
-
     title = "Base Results"
 
     def __init__(self, state: "AppState", router: "ScreenRouter") -> None:
@@ -165,16 +166,16 @@ class BaseResultsScreen:
 
         self._results: list[dict] = []
         self._structures: list[Atoms] = []
-        
+
         self._hide_unconverged: bool = True
         self._hide_thick: bool = False
         self._hide_duplicates: bool = False
         self._search_query: str = ""
-        
+
         self._show_thickness: bool = False
         self._show_dynamical_stability: bool = False
         self._show_duplicate_col: bool = False
-        
+
         self._app_message: str = ""
 
         self._main_frame: urwid.Frame | None = None
@@ -233,7 +234,9 @@ class BaseResultsScreen:
         )
         urwid.connect_signal(self._table, "select", self._on_row_select)
 
-        self._details_content = urwid.WidgetPlaceholder(urwid.Text("No structure selected."))
+        self._details_content = urwid.WidgetPlaceholder(
+            urwid.Text("No structure selected.")
+        )
         self._details_panel = urwid.LineBox(
             self._details_content,
             title="Structure Details",
@@ -298,7 +301,12 @@ class BaseResultsScreen:
                 and not any(r.get("converged", True) for r in self._results)
             ):
                 self._details_content.original_widget = urwid.Text(
-                    [("details", "All structures are unconverged. Press [u] to show them.")]
+                    [
+                        (
+                            "details",
+                            "All structures are unconverged. Press [u] to show them.",
+                        )
+                    ]
                 )
             else:
                 self._details_content.original_widget = urwid.Text(
@@ -317,20 +325,29 @@ class BaseResultsScreen:
             cell_lengths = atoms.get_cell().lengths()
 
             cells = []
+
             def add_cell(label, val):
-                cells.append(urwid.Text([("form_label", f"{label}: "), ("details", str(val))], align="left"))
+                cells.append(
+                    urwid.Text(
+                        [("form_label", f"{label}: "), ("details", str(val))],
+                        align="left",
+                    )
+                )
 
             if result.get("structure_id"):
                 add_cell("ID", result.get("structure_id"))
 
             add_cell("Atoms", len(atoms))
-            add_cell("Cell (Å)", f"{cell_lengths[0]:.3f}, {cell_lengths[1]:.3f}, {cell_lengths[2]:.3f}")
+            add_cell(
+                "Cell (Å)",
+                f"{cell_lengths[0]:.3f}, {cell_lengths[1]:.3f}, {cell_lengths[2]:.3f}",
+            )
             add_cell("Initial SG", result.get("initial_spg", "N/A"))
             add_cell("Final SG", result.get("final_spg", "N/A"))
-            
-            epa = result.get('energy_per_atom', result.get('effective_per_atom', 0.0))
+
+            epa = result.get("energy_per_atom", result.get("effective_per_atom", 0.0))
             add_cell("Energy/atom", f"{epa:.4f} eV")
-            
+
             if self._pressure_gpa > 0:
                 h = result.get("enthalpy_per_atom")
                 if h is not None:
@@ -339,34 +356,39 @@ class BaseResultsScreen:
                 if vol is not None:
                     add_cell("Volume", f"{vol:.3f} Å³")
                 add_cell("Pressure", f"{self._pressure_gpa} GPa")
-            
-            fmax = result.get('fmax')
+
+            fmax = result.get("fmax")
             if fmax is not None:
                 add_cell("Fmax", f"{fmax:.3f}")
-            
-            converged = result.get('converged')
+
+            converged = result.get("converged")
             if converged is not None:
                 add_cell("Converged", bool(converged))
-            
+
             if self._show_thickness:
                 t = result.get("thickness")
                 if t is not None:
                     add_cell("Thickness (Å)", f"{t:.2f}")
-            
+
             for extra in self._get_extra_details(result):
                 markup, text = extra
                 text = text.rstrip("\n")
                 if ":" in text:
                     label, val = text.split(":", 1)
-                    cells.append(urwid.Text([("form_label", f"{label}: "), ("details", val.strip())], align="left"))
+                    cells.append(
+                        urwid.Text(
+                            [("form_label", f"{label}: "), ("details", val.strip())],
+                            align="left",
+                        )
+                    )
                 else:
                     cells.append(urwid.Text([(markup, text)], align="left"))
-            
+
             if self._show_dynamical_stability:
                 dyn = _dyn_stability(result, self._phonon_cutoff)
                 dyn_str = "Yes" if dyn is True else ("No" if dyn is False else "N/A")
                 add_cell("Dyn. Stability", dyn_str)
-                
+
             min_freq = result.get("min_phonon_freq")
             if min_freq is not None:
                 try:
@@ -375,7 +397,7 @@ class BaseResultsScreen:
                         add_cell("Min freq (THz)", f"{f:.4f}")
                 except (TypeError, ValueError):
                     pass
-                    
+
             dup = result.get("duplicate")
             if dup is not None:
                 add_cell("Duplicate", "Yes" if dup else "No")
@@ -383,7 +405,9 @@ class BaseResultsScreen:
             grid = urwid.GridFlow(cells, cell_width=35, h_sep=2, v_sep=1, align="left")
             self._details_content.original_widget = grid
         else:
-            self._details_content.original_widget = urwid.Text([("details", "No structure data available for this row.")])
+            self._details_content.original_widget = urwid.Text(
+                [("details", "No structure data available for this row.")]
+            )
 
     def apply_search(self, query: str) -> None:
         self._search_query = query.strip().lower()
@@ -430,7 +454,9 @@ class BaseResultsScreen:
 
         from rapmat.tui.widgets.form import FormGroup, float_field
 
-        default_val = self._thickness_cutoff if self._thickness_cutoff is not None else 0.0
+        default_val = (
+            self._thickness_cutoff if self._thickness_cutoff is not None else 0.0
+        )
         form = FormGroup(
             fields=[
                 float_field("cutoff", "Max thickness (Å)", default=default_val),
@@ -447,7 +473,7 @@ class BaseResultsScreen:
                 return
             vals = form.get_values()
             cutoff = float(vals.get("cutoff", 0.0))
-            self._main_frame.body = current_body  
+            self._main_frame.body = current_body
             if cutoff > 0:
                 self._thickness_cutoff = cutoff
                 self._hide_thick = True
@@ -460,10 +486,10 @@ class BaseResultsScreen:
                 self._show_message("Showing all thicknesses.")
 
         def _on_cancel(_btn) -> None:
-            self._main_frame.body = current_body  
+            self._main_frame.body = current_body
 
         def _on_clear(_btn) -> None:
-            self._main_frame.body = current_body  
+            self._main_frame.body = current_body
             self._thickness_cutoff = None
             self._hide_thick = False
             self._rebuild_table()
@@ -542,8 +568,10 @@ class BaseResultsScreen:
 
         current_body = self._main_frame.body
 
-        def _on_save(fmt: str, directory: str, standardize: bool, save_all: bool) -> None:
-            self._main_frame.body = current_body  
+        def _on_save(
+            fmt: str, directory: str, standardize: bool, save_all: bool
+        ) -> None:
+            self._main_frame.body = current_body
             if not save_all:
                 self._do_save(result, idx, fmt, directory, standardize, quiet=False)
             else:
@@ -553,25 +581,41 @@ class BaseResultsScreen:
                     try:
                         res_idx = int(res_idx)
                         if res_idx is not None and 0 <= res_idx < len(self._structures):
-                            if self._do_save(res, res_idx, fmt, directory, standardize, quiet=True):
+                            if self._do_save(
+                                res, res_idx, fmt, directory, standardize, quiet=True
+                            ):
                                 success_count += 1
                     except (TypeError, ValueError):
                         pass
-                self._show_message(f"Saved {success_count}/{num_filtered} structures to {directory}")
+                self._show_message(
+                    f"Saved {success_count}/{num_filtered} structures to {directory}"
+                )
 
         def _on_cancel() -> None:
-            self._main_frame.body = current_body  
+            self._main_frame.body = current_body
 
         run_name = getattr(self, "_run_name", None) or self._state.active_run
-        default_dir = str(Path.cwd() / f"saved_{run_name}") if run_name else str(Path.cwd())
+        default_dir = (
+            str(Path.cwd() / f"saved_{run_name}") if run_name else str(Path.cwd())
+        )
 
-        save_dlg = _SaveDialog(current_body, _on_save, num_filtered=num_filtered, default_dir=default_dir)
+        save_dlg = _SaveDialog(
+            current_body, _on_save, num_filtered=num_filtered, default_dir=default_dir
+        )
         urwid.connect_signal(
             save_dlg, "close", lambda _w, ok: _on_cancel() if not ok else None
         )
         self._main_frame.body = save_dlg
 
-    def _do_save(self, result: dict, idx: int, fmt: str, directory: str, standardize: bool = True, quiet: bool = False) -> bool:
+    def _do_save(
+        self,
+        result: dict,
+        idx: int,
+        fmt: str,
+        directory: str,
+        standardize: bool = True,
+        quiet: bool = False,
+    ) -> bool:
         from rapmat.utils.structure import standardize_atoms
 
         atoms = self._structures[idx]
@@ -661,7 +705,10 @@ class BaseResultsScreen:
             fields=[
                 int_field("top_n", "Top N structures", default=5),
                 dropdown_field(
-                    "apply_to", "Apply to", options=["Filtered view", "All converged"], default=0
+                    "apply_to",
+                    "Apply to",
+                    options=["Filtered view", "All converged"],
+                    default=0,
                 ),
                 dropdown_field(
                     "calculator", "Calculator", options=calc_options, default=0
@@ -683,11 +730,11 @@ class BaseResultsScreen:
                 err_text.set_text(("form_error", "; ".join(errors)))
                 return
             vals = form.get_values()
-            self._main_frame.body = current_body  
+            self._main_frame.body = current_body
             self._start_phonon_task(vals)
 
         def _on_cancel(_btn) -> None:
-            self._main_frame.body = current_body  
+            self._main_frame.body = current_body
 
         err_text = urwid.Text("")
         submit_btn = urwid.AttrMap(
@@ -808,7 +855,7 @@ class BaseResultsScreen:
             self._phonon_cutoff = phonon_cutoff
             self._on_phonon_complete(phonon_cutoff)
             self._rebuild_table()
-            
+
             if self._body_pile is not None and self._details_panel is not None:
                 self._body_pile.contents[1] = (
                     self._details_panel,

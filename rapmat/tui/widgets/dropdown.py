@@ -1,11 +1,7 @@
-"""Dropdown selector widget for the Rapmat TUI."""
-
 import urwid
 
 
 class _PopupBody(urwid.WidgetWrap):
-    """Thin wrapper that closes the parent popup on Escape."""
-
     def __init__(self, widget: urwid.Widget, close_fn) -> None:
         self._close = close_fn
         super().__init__(widget)
@@ -18,22 +14,6 @@ class _PopupBody(urwid.WidgetWrap):
 
 
 class DropdownSelect(urwid.PopUpLauncher):
-    """Pick-one dropdown built on urwid's popup overlay system.
-
-    Displays the current selection as a button; clicking opens a popup
-    list with radio-style markers (● / ○).  Emits a ``"change"`` signal
-    with the new value string.
-
-    Parameters
-    ----------
-    label:
-        Label prefix shown on the button (e.g. ``"Domain"``).
-    options:
-        Sequence of string choices.
-    default:
-        Index of the initially selected option.
-    """
-
     signals = ["change"]
 
     def __init__(self, label: str, options: list[str], default: int = 0) -> None:
@@ -70,11 +50,9 @@ class DropdownSelect(urwid.PopUpLauncher):
 
     @property
     def value(self) -> str:
-        """Currently selected option string."""
         return self.options[self.selected]
 
     def set_value(self, value: str) -> None:
-        """Set the selection by value string (no-op if not found)."""
         try:
             idx = self.options.index(value)
         except ValueError:

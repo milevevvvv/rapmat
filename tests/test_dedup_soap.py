@@ -76,7 +76,9 @@ def _make_store_with_relaxed(tmp_path, name, soap, atoms, energy=-1.0):
     vec = soap.compute(atoms)
     store = SurrealDBStore.from_path(tmp_path / name)
     store.register_descriptor(soap.descriptor_id(), soap.dimension())
-    store.create_study(study_id="run1", system="Test", domain="bulk", calculator="MATTERSIM", config={})
+    store.create_study(
+        study_id="run1", system="Test", domain="bulk", calculator="MATTERSIM", config={}
+    )
     store.create_run(name="run1", study_id="run1")
     store.add_candidate(atoms, vec, "run1", "run1/1")
     store.update_structure(
@@ -126,7 +128,9 @@ def test_duplicate_min_energy_returns_lowest(tmp_path, soap_cu):
     """get_duplicate_min_energy should return the minimum among duplicates."""
     store = SurrealDBStore.from_path(tmp_path / "dup_min_e")
     store.register_descriptor(soap_cu.descriptor_id(), soap_cu.dimension())
-    store.create_study(study_id="run1", system="Test", domain="bulk", calculator="MATTERSIM", config={})
+    store.create_study(
+        study_id="run1", system="Test", domain="bulk", calculator="MATTERSIM", config={}
+    )
     store.create_run(name="run1", study_id="run1")
 
     cu = bulk("Cu", "fcc", a=3.615)

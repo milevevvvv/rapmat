@@ -1,17 +1,7 @@
-"""Progress panel widget for the Rapmat TUI."""
-
 import urwid
 
 
 class ProgressPanel(urwid.WidgetWrap):
-    """Composite progress widget: bar on top, scrolling log below.
-
-    Parameters
-    ----------
-    title:
-        Title shown in the ``LineBox`` border.
-    """
-
     def __init__(self, title: str = " Progress ") -> None:
         self._bar = urwid.ProgressBar("progress", "pg_done", current=0, done=100)
         self._log_walker = urwid.SimpleListWalker([])
@@ -35,7 +25,6 @@ class ProgressPanel(urwid.WidgetWrap):
     # ------------------------------------------------------------------ #
 
     def set_progress(self, current: int, total: int, message: str = "") -> None:
-        """Update the progress bar and status text."""
         if total <= 0:
             total = 1
         self._bar.done = total
@@ -47,23 +36,19 @@ class ProgressPanel(urwid.WidgetWrap):
             self._status_text.set_text(f"{current} / {total}")
 
     def add_log(self, message: str) -> None:
-        """Append a line to the scrolling log and scroll to the bottom."""
         self._log_walker.append(urwid.Text(("log_line", message)))
         self._log_box.set_focus(len(self._log_walker) - 1)
 
     def clear(self) -> None:
-        """Reset bar and log to initial state."""
         self._bar.set_completion(0)
         self._status_text.set_text("")
         self._log_walker[:] = []
 
     def set_cancelling(self) -> None:
-        """Show an immediate 'awaiting cancellation' indicator."""
         self._status_text.set_text(("error", "⏳ Awaiting cancellation…"))
         self.add_log("Cancellation requested, waiting for current operation to finish…")
 
     def set_finished(self, success: bool, message: str) -> None:
-        """Show a final status message."""
         attr = "success" if success else "error"
         self._status_text.set_text((attr, message))
         if success:

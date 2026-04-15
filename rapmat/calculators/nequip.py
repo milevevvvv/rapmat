@@ -1,7 +1,7 @@
-import subprocess
 import sys
 import warnings
-from functools import partial
+import subprocess
+
 from pathlib import Path
 
 from rapmat.calculators import CalculatorCallback, ensure_asset

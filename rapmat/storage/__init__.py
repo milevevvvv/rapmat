@@ -1,6 +1,3 @@
-from rapmat.storage.base import StructureDescriptor, StructureStore
-
-
 def __getattr__(name: str):
     if name == "SOAPDescriptor":
         from rapmat.storage.descriptors import SOAPDescriptor

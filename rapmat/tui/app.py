@@ -1,12 +1,7 @@
-"""Central TUI application class for Rapmat."""
-
 import sys
-
 import urwid
 
-# urwid registers urwid.display.curses as a lazy module in sys.modules.
-# On Windows _curses is unavailable; if anything (e.g. torch via
-# inspect.getmodule) accidentally triggers the lazy load it will crash.
+# NOTE: very dirty fix for Windows, research better solution
 if sys.platform == "win32":
     sys.modules.pop("urwid.display.curses", None)
 
@@ -36,13 +31,13 @@ PALETTE = [
     ("btn_focus", "white", "dark green", "bold"),
     ("dropdown_hl", "white", "dark blue"),
     ("menu_back", "light gray", "dark magenta"),
-    ("progress",      "white",       "default"),
-    ("pg_done",       "white",       "dark green",  "bold"),
-    ("log_line",      "light cyan",  "default"),
-    ("form_label",    "light cyan",  "default"),
-    ("form_error",    "light red",   "default"),
-    ("cuda_tag",      "light green", "dark blue",   "bold"),
-    ("cpu_tag",       "light gray",  "dark blue"),
+    ("progress", "white", "default"),
+    ("pg_done", "white", "dark green", "bold"),
+    ("log_line", "light cyan", "default"),
+    ("form_label", "light cyan", "default"),
+    ("form_error", "light red", "default"),
+    ("cuda_tag", "light green", "dark blue", "bold"),
+    ("cpu_tag", "light gray", "dark blue"),
 ]
 
 
@@ -52,19 +47,6 @@ PALETTE = [
 
 
 class RapmatApp:
-    """Top-level TUI application.
-
-    Parameters
-    ----------
-    state:
-        Shared application state.  Must have ``store`` already connected
-        (may be an in-memory fallback when the configured backend failed).
-    startup_error:
-        If the configured storage backend failed to connect, this holds
-        the original exception.  The TUI will display a modal error
-        dialog on the first paint and offer to open DB Settings.
-    """
-
     def __init__(
         self,
         state: "AppState",
@@ -80,10 +62,12 @@ class RapmatApp:
         self._breadcrumb = urwid.Text(" Rapmat TUI", wrap="clip")
         self._hw_status = urwid.Text(self._get_hw_status(), align="right")
 
-        header_cols = urwid.Columns([
-            ("weight", 1, self._breadcrumb),
-            ("pack", self._hw_status),
-        ])
+        header_cols = urwid.Columns(
+            [
+                ("weight", 1, self._breadcrumb),
+                ("pack", self._hw_status),
+            ]
+        )
         header = urwid.AttrMap(header_cols, "header")
 
         self._status_bar = StatusBar()
@@ -115,15 +99,14 @@ class RapmatApp:
     # ------------------------------------------------------------------ #
 
     def run(self) -> None:
-        """Start the Urwid event loop (blocks until the user quits)."""
         if self._startup_error is not None:
             self._loop.set_alarm_in(0, self._show_startup_error)
         self._loop.run()
 
     def _get_hw_status(self) -> list[tuple[str, str]]:
-        """Check for CUDA and return a color-coded markup list."""
         try:
             import torch
+
             if torch.cuda.is_available():
                 return [("cuda_tag", " ⚡  CUDA ")]
             return [("cpu_tag", " 🖥️  CPU ")]
@@ -131,7 +114,6 @@ class RapmatApp:
             return [("cpu_tag", " 🖥️  NO TORCH ")]
 
     def _show_startup_error(self, _loop, _data) -> None:
-        """Display a modal dialog describing the DB connection failure."""
         from rapmat.tui.widgets.dialog import ModalDialog
 
         exc = self._startup_error
@@ -173,7 +155,6 @@ class RapmatApp:
     # ------------------------------------------------------------------ #
 
     def _global_input(self, key: str) -> None:
-        """Handle keys not consumed by any widget or screen."""
         if key in ("q", "Q"):
             raise urwid.ExitMainLoop()
         current = self._router.current

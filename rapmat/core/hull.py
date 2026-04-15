@@ -1,14 +1,9 @@
-"""Phase analysis: convex hull and energy ranking.
-
-All functions are pure readers — they query the store but never mutate it.
-Formation energies and reference energies are computed on-the-fly (never cached).
-"""
+import numpy as np
+import matplotlib.pyplot as plt
 
 from pathlib import Path
 from typing import Optional
 
-import matplotlib.pyplot as plt
-import numpy as np
 from matplotlib.figure import Figure
 from pymatgen.analysis.phase_diagram import PDEntry, PhaseDiagram
 from pymatgen.core import Composition
@@ -22,11 +17,6 @@ from rapmat.storage.base import StructureStore
 
 
 def get_composition_fraction(formula: dict[str, int], element: str) -> float:
-    """Return the atomic fraction of *element* in *formula*.
-
-    >>> get_composition_fraction({"Al": 2, "O": 3}, "Al")
-    0.4
-    """
     total = sum(formula.values())
     return formula.get(element, 0) / total if total else 0.0
 
@@ -37,12 +27,10 @@ def get_composition_fraction(formula: dict[str, int], element: str) -> float:
 
 
 def _study_has_pressure(runs: list[dict]) -> bool:
-    """Return True if any run in the study was performed under pressure."""
     return any(run["config"].get("pressure_gpa", 0.0) > 0 for run in runs)
 
 
 def _effective_epa(s: dict, use_enthalpy: bool) -> float:
-    """Return enthalpy_per_atom when available and requested, else energy_per_atom."""
     if use_enthalpy and s.get("enthalpy_per_atom") is not None:
         return s["enthalpy_per_atom"]
     return s["energy_per_atom"]
@@ -54,16 +42,6 @@ def get_reference_energies(
     *,
     use_enthalpy: bool = False,
 ) -> dict[str, float]:
-    """Return ``{element: value_per_atom}`` for each element in the study.
-
-    When *use_enthalpy* is True the reference value is the minimum
-    ``enthalpy_per_atom``; otherwise it is the minimum ``energy_per_atom``.
-
-    Raises
-    ------
-    ValueError
-        If a pure-element run is missing or has no relaxed structures.
-    """
     study = store.get_study(study_id)
     if study is None:
         raise ValueError(f"Study '{study_id}' not found.")
@@ -106,31 +84,6 @@ def build_phase_diagram(
     show_all: bool = False,
     hull_cutoff: float = 0.0,
 ) -> tuple[PhaseDiagram, list[dict], bool]:
-    """Build a pymatgen ``PhaseDiagram`` from study data.
-
-    Parameters
-    ----------
-    store
-        SurrealDB storage backend.
-    study_id
-        Identifier of the study to build the hull for.
-    symprec
-        Symmetry precision for space-group labels.
-    show_all
-        If *True*, include every relaxed structure in the returned list.
-    hull_cutoff
-        If *show_all* is False, include structures within this energy (eV/atom)
-        of the convex hull.
-
-    Returns
-    -------
-    pd : PhaseDiagram
-        The pymatgen phase diagram object.
-    structure_data : list[dict]
-        Per-structure records used for plotting / reporting.
-    use_enthalpy : bool
-        Whether enthalpy was used (True when any run has pressure > 0).
-    """
     study = store.get_study(study_id)
     if study is None:
         raise ValueError(f"Study '{study_id}' not found.")
@@ -227,11 +180,6 @@ def build_energy_ranking(
     show_all: bool = False,
     hull_cutoff: float = 0.0,
 ) -> list[dict]:
-    """Build a simple energy ranking for single-element studies.
-
-    If *show_all* is False, filters structures within *hull_cutoff* of the
-    ground state.
-    """
     study = store.get_study(study_id)
     if study is None:
         raise ValueError(f"Study '{study_id}' not found.")
@@ -279,6 +227,7 @@ def build_energy_ranking(
 
     return structure_data
 
+
 # ------------------------------------------------------------------ #
 #  Binary hull plotting
 # ------------------------------------------------------------------ #
@@ -292,27 +241,6 @@ def plot_binary_hull(
     show: bool = True,
     use_enthalpy: bool = False,
 ) -> Figure:
-    """Plot a binary convex hull of formation energy/enthalpy vs composition.
-
-    Parameters
-    ----------
-    structure_data
-        Records produced by :func:`build_phase_diagram`.
-    system
-        Chemical system string, e.g. ``"Al-O"``.
-    save_path
-        If given, save the figure to this path.
-    show
-        If *True*, call ``plt.show()`` (set *False* in headless environments).
-    use_enthalpy
-        If *True*, label the y-axis as "Formation enthalpy" instead of
-        "Formation energy".
-
-    Returns
-    -------
-    Figure
-        The matplotlib figure.
-    """
     elements = parse_system(system)
     if len(elements) != 2:
         raise ValueError("plot_binary_hull only supports binary systems.")
@@ -323,7 +251,6 @@ def plot_binary_hull(
     ys = np.array([d["formation_energy"] for d in structure_data])
     stable = np.array([d["is_stable"] for d in structure_data])
 
-    # Plot unstable points
     if (~stable).any():
         ax.scatter(
             xs[~stable],
@@ -351,7 +278,6 @@ def plot_binary_hull(
                 zorder=1,
             )
 
-    # Plot stable points and hull line
     if stable.any():
         hull_xs = np.concatenate([[0.0], xs[stable], [1.0]])
         hull_ys = np.concatenate([[0.0], ys[stable], [0.0]])

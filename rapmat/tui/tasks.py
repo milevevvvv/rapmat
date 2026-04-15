@@ -1,10 +1,8 @@
-"""Background task infrastructure for the Rapmat TUI."""
-
+import urwid
 import threading
+
 from dataclasses import dataclass, field
 from typing import Callable
-
-import urwid
 
 # ------------------------------------------------------------------ #
 #  Thread-safe progress state
@@ -13,8 +11,6 @@ import urwid
 
 @dataclass
 class TaskProgress:
-    """Shared state written by the worker thread, read by the poll callback."""
-
     total: int = 0
     current: int = 0
     message: str = ""
@@ -25,7 +21,6 @@ class TaskProgress:
     _lock: threading.Lock = field(default_factory=threading.Lock, repr=False)
 
     def update(self, current: int, total: int = 0, message: str = "") -> None:
-        """Report progress from the worker thread."""
         with self._lock:
             self.current = current
             if total:
@@ -33,10 +28,9 @@ class TaskProgress:
             self.message = message
 
     def log(self, message: str) -> None:
-        """Append a log line from the worker thread and echo to physical log file."""
         with self._lock:
             self.log_lines.append(message)
-            
+
         try:
             from datetime import datetime
             from rapmat.config import APP_DATA_DIR
@@ -52,18 +46,15 @@ class TaskProgress:
             pass
 
     def finish(self) -> None:
-        """Mark the task as successfully completed."""
         with self._lock:
             self.finished = True
 
     def fail(self, error: str) -> None:
-        """Mark the task as failed with an error message."""
         with self._lock:
             self.error = error
             self.finished = True
 
     def drain_logs(self) -> list[str]:
-        """Pop and return all pending log lines (called from UI thread)."""
         with self._lock:
             lines = list(self.log_lines)
             self.log_lines.clear()
@@ -76,31 +67,6 @@ class TaskProgress:
 
 
 class BackgroundTask:
-    """Run a callable in a background thread and poll its progress.
-
-    Parameters
-    ----------
-    fn:
-        Worker function.  Receives a single ``TaskProgress`` argument.
-        Must check ``progress.cancelled`` periodically and return early
-        if set.
-    loop:
-        The ``urwid.MainLoop`` instance.  Used to schedule poll alarms.
-    on_progress:
-        Called on the UI thread with ``(current: int, total: int, message: str)`` each
-        poll cycle while the task is running.
-    on_log:
-        Called on the UI thread with each new log line drained from the
-        progress queue.
-    on_complete:
-        Called on the UI thread with no arguments when the task finishes
-        successfully.
-    on_error:
-        Called on the UI thread with ``(error: str)`` when the task fails.
-    poll_interval:
-        Seconds between poll alarms.
-    """
-
     _POLL_INTERVAL = 0.3
 
     def __init__(
@@ -128,14 +94,12 @@ class BackgroundTask:
     # ------------------------------------------------------------------ #
 
     def start(self) -> None:
-        """Spawn the worker thread and schedule the first poll alarm."""
         self._progress = TaskProgress()
         self._thread = threading.Thread(target=self._run, daemon=True)
         self._thread.start()
         self._loop.set_alarm_in(self._poll_interval, self._poll)
 
     def cancel(self) -> None:
-        """Request cancellation.  The worker must honour ``progress.cancelled``."""
         self._progress.cancelled = True
 
     # ------------------------------------------------------------------ #
@@ -143,7 +107,6 @@ class BackgroundTask:
     # ------------------------------------------------------------------ #
 
     def _run(self) -> None:
-        """Worker thread entry point."""
         try:
             self._fn(self._progress)
             if not self._progress.finished:
@@ -154,7 +117,6 @@ class BackgroundTask:
             self._progress.fail(str(exc))
 
     def _poll(self, loop: urwid.MainLoop, data) -> None:
-        """Poll callback executed on the UI thread."""
         p = self._progress
 
         if self._on_log:

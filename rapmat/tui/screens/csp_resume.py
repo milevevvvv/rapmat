@@ -1,8 +1,4 @@
-"""CSP Resume screen for the Rapmat TUI."""
-
 import uuid
-
-
 import urwid
 
 from rapmat.tui.widgets.dialog import ModalDialog
@@ -15,8 +11,6 @@ from rapmat.tui.tasks import BackgroundTask
 
 
 class CSPResumeScreen:
-    """Resume an interrupted CSP run."""
-
     title = "Resume Run"
 
     @property
@@ -202,7 +196,9 @@ class CSPResumeScreen:
                 progress.log(f"Working directory: {workdir_path}")
                 pending_gen = store.get_pending_generation(run_name)
                 if pending_gen:
-                    progress.log(f"Finishing generation phase ({len(pending_gen)} placeholders remaining)...")
+                    progress.log(
+                        f"Finishing generation phase ({len(pending_gen)} placeholders remaining)..."
+                    )
                     store.set_run_status(run_name, "generating")
                     run_generation_loop(
                         run_name=run_name,
@@ -215,11 +211,13 @@ class CSPResumeScreen:
                         cancel_flag=cancel_flag,
                         log_callback=progress.log,
                     )
-                    
+
                     if progress.cancelled or cancel_flag[0]:
                         raise KeyboardInterrupt("Cancelled by user")
-                    
-                    progress.log("Generation complete. Initializing calculator for processing...")
+
+                    progress.log(
+                        "Generation complete. Initializing calculator for processing..."
+                    )
                     store.set_run_status(run_name, "processing")
 
                 def _proc_cb(current, total, msg, is_log=True):
@@ -231,7 +229,7 @@ class CSPResumeScreen:
                         progress.log(msg)
 
                 progress.log("Running processing phase...")
-                
+
                 t0 = time.monotonic()
                 run_processing_loop(
                     run_name=run_name,
@@ -244,8 +242,10 @@ class CSPResumeScreen:
                     cancel_flag=cancel_flag,
                 )
                 t1 = time.monotonic()
-                progress.log(f"Resumed run '{run_name}' computation finished in {t1 - t0:.2f} seconds.")
-                
+                progress.log(
+                    f"Resumed run '{run_name}' computation finished in {t1 - t0:.2f} seconds."
+                )
+
                 store.release_run(run_name, "completed")
         except KeyboardInterrupt:
             store.release_run(run_name, "interrupted")

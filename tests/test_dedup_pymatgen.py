@@ -151,7 +151,13 @@ class TestStoreIntegration:
     def _make_store(self, tmp_path, name, soap, atoms, energy):
         store = SurrealDBStore.from_path(tmp_path / name)
         store.register_descriptor(soap.descriptor_id(), soap.dimension())
-        store.create_study(study_id="run1", system="Test", domain="bulk", calculator="MATTERSIM", config={})
+        store.create_study(
+            study_id="run1",
+            system="Test",
+            domain="bulk",
+            calculator="MATTERSIM",
+            config={},
+        )
         store.create_run(name="run1", study_id="run1")
         vec = soap.compute(atoms)
         store.add_candidate(atoms, vec, "run1", "run1/1")
@@ -213,7 +219,13 @@ class TestStoreIntegration:
         """get_nearby_structures finds both generated and relaxed entries."""
         store = SurrealDBStore.from_path(tmp_path / "multi_status")
         store.register_descriptor(soap.descriptor_id(), soap.dimension())
-        store.create_study(study_id="run1", system="Test", domain="bulk", calculator="MATTERSIM", config={})
+        store.create_study(
+            study_id="run1",
+            system="Test",
+            domain="bulk",
+            calculator="MATTERSIM",
+            config={},
+        )
         store.create_run(name="run1", study_id="run1")
 
         cu_fcc = bulk("Cu", "fcc", a=3.615)

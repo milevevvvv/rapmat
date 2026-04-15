@@ -1,11 +1,5 @@
-"""Batch phonon dynamical-stability computation for CSP results.
-
-Shared logic for batch evaluation of phonon stability.
-"""
-
-from typing import Callable, List, Optional, Tuple
-
 from ase import Atoms
+from typing import Callable, List, Optional, Tuple
 
 from rapmat.calculators import CalculatorCallback, Calculators
 from rapmat.calculators.factory import load_calculator
@@ -35,8 +29,6 @@ def compute_dynamical_stability_for_results(
     symprec: float = 1e-3,
     reduce_primitive: bool = True,
 ) -> bool:
-    """Compute phonon dynamical stability for the top N converged structures.
-    """
     if phonon_top < 1:
         return False
     if not results or not structures:

@@ -1,5 +1,3 @@
-"""Study list screen for the Rapmat TUI."""
-
 import urwid
 
 from rapmat.tui.widgets.table import SortableTable
@@ -40,8 +38,6 @@ def _format_study_row(row: dict) -> list[str]:
 
 
 class _SearchEdit(urwid.Edit):
-    """Search box that exits on Escape."""
-
     def __init__(self, on_change, on_exit):
         super().__init__(caption="Search: ")
         self._on_change = on_change
@@ -57,8 +53,6 @@ class _SearchEdit(urwid.Edit):
 
 
 class StudyListScreen:
-    """Phase diagram studies list screen."""
-
     title = "Studies"
 
     def __init__(self, state: "AppState", router: "ScreenRouter") -> None:
@@ -124,7 +118,9 @@ class StudyListScreen:
         )
         urwid.connect_signal(self._table, "select", self._on_study_select)
 
-        self._details_content = urwid.WidgetPlaceholder(urwid.Text("No study selected."))
+        self._details_content = urwid.WidgetPlaceholder(
+            urwid.Text("No study selected.")
+        )
         self._details_panel = urwid.LineBox(
             self._details_content,
             title="Study Configuration",
@@ -191,9 +187,11 @@ class StudyListScreen:
     def _on_study_focus_change(self, study: dict | None) -> None:
         if getattr(self, "_details_content", None) is None:
             return
-        
+
         if study is None:
-            self._details_content.original_widget = urwid.Text([("details", "No study selected.")])
+            self._details_content.original_widget = urwid.Text(
+                [("details", "No study selected.")]
+            )
         else:
             config = study.get("config", {})
             self._details_content.original_widget = build_config_grid(config)

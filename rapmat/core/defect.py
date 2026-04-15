@@ -1,7 +1,7 @@
 import warnings
-from typing import List, Tuple
 
 from ase import Atoms
+from typing import List, Tuple
 from pymatgen.io.ase import AseAtomsAdaptor
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 
@@ -10,9 +10,6 @@ from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 
 class DefectGenerator:
     def __init__(self, atoms: Atoms):
-        """
-        Initializes the generator with an ASE Atoms object.
-        """
         self.original_atoms = atoms
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
@@ -21,10 +18,6 @@ class DefectGenerator:
         self.symmetrized_structure = self.sga.get_symmetrized_structure()
 
     def get_unique_sites_info(self) -> dict[int, dict]:
-        """
-        Returns a dictionary mapping the representative site index to symmetry info.
-        Format: {index: {'element': 'Mo', 'multiplicity': 2, ...}}
-        """
         unique_sites = {}
         equivalents = self.symmetrized_structure.equivalent_indices
 
@@ -42,9 +35,6 @@ class DefectGenerator:
     def generate_vacancies(
         self, supercell: Tuple[int, int, int] = (1, 1, 1)
     ) -> List[dict]:
-        """
-        Generates symmetry-unique vacancies.
-        """
         unique_sites = self.get_unique_sites_info()
         defects = []
 
@@ -73,10 +63,6 @@ class DefectGenerator:
         substitutions: dict[str, str | List[str]],
         supercell: Tuple[int, int, int] = (1, 1, 1),
     ) -> List[dict]:
-        """
-        Generates substitutions.
-        substitutions: {'Mo': 'W'} or {'Mo': ['W', 'Cr']}
-        """
         unique_sites = self.get_unique_sites_info()
         defects = []
 

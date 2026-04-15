@@ -1,9 +1,6 @@
-"""Phonon dispersion screen for the Rapmat TUI."""
+import urwid
 
 from pathlib import Path
-
-
-import urwid
 
 from rapmat.tui.widgets.form import (
     FormGroup,
@@ -27,8 +24,6 @@ def _calc_options() -> list[str]:
 
 
 class PhononDispersionScreen:
-    """Phonon dispersion calculation screen."""
-
     title = "Phonon Dispersion"
 
     def __init__(self, state: "AppState", router: "ScreenRouter") -> None:
@@ -239,15 +234,9 @@ class PhononDispersionScreen:
 
                 cancel_flag = [False]
 
-                # We need a callback to set the cancel flag if the user pressed Esc
-                # while we are in the optimizer loop
                 def _phony_check():
                     if progress.cancelled:
                         cancel_flag[0] = True
-
-                # Hack: Python doesn't let us inject callbacks into ASE easily without our cancel_flag hook
-                # but we can at least pass cancel_flag down. To actually trip it, we'd need another thread,
-                # but for now we just pass it so it's there. The _worker itself checks progress.cancelled above.
 
                 converged, relaxed = structure_relax(
                     structure,
@@ -267,6 +256,7 @@ class PhononDispersionScreen:
                 progress.update(2, 5, "Reducing to primitive cell")
                 progress.log("Reducing to primitive cell...")
                 from rapmat.utils.structure import standardize_atoms
+
                 calc = structure.calc
                 try:
                     structure = standardize_atoms(structure, to_primitive=True)
@@ -281,7 +271,7 @@ class PhononDispersionScreen:
                 displacement,
                 supercell,
                 qpoint_mesh,
-                progress_callback=progress.update
+                progress_callback=progress.update,
             )
 
             is_unstable = structure_has_imag_phonon_freq(phonons, imag_cutoff)

@@ -1,10 +1,3 @@
-"""Evaluation logic for comparing MLIP results against a reference calculator.
-
-Contains both the evaluation orchestration loop (``run_eval_loop``) and
-pure metric computation helpers (``compute_ranking_metrics``,
-``compute_stability_metrics``).
-"""
-
 from typing import Sequence
 from rapmat.utils.structure import standardize_atoms
 
@@ -28,23 +21,20 @@ def run_eval_loop(
     progress_callback=None,
     log_callback=None,
     reduce_to_primitive: bool = True,
-    symprec: float = 1e-3
+    symprec: float = 1e-3,
 ) -> None:
-    """Evaluate *pending* structures with *calculator* and store results.
-
-    """
     from rapmat.core.phonon import get_mesh_min_frequency, structure_calculate_phonons
     from rapmat.utils.console import err_console
 
     from rapmat.calculators import cleanup_calculator_files
-    
+
     n_total = len(pending)
     for i, rec in enumerate(pending, 1):
         atoms = rec["atoms"].copy()
         atoms.pbc = True  # NOTE: ensure full PBC for calculators like VASP, dirty fix, limit to VASP later
-        
+
         cleanup_calculator_files(calculator)
-        
+
         atoms.calc = calculator
 
         try:
@@ -61,7 +51,9 @@ def run_eval_loop(
                     atoms.calc = calculator
 
                     if log_callback:
-                        log_callback(f"Reducing {rec['id']}: {atoms_len_before} -> {atoms_len_after} atoms")
+                        log_callback(
+                            f"Reducing {rec['id']}: {atoms_len_before} -> {atoms_len_after} atoms"
+                        )
 
                 phonons = structure_calculate_phonons(
                     atoms,
@@ -105,27 +97,6 @@ def compute_ranking_metrics(
     phonon_cutoff: float = -0.15,
     stable_only: bool = True,
 ) -> dict:
-    """Compute energy-ranking agreement between MLIP and reference calculator.
-
-    Parameters
-    ----------
-    results
-        Each dict must have ``mlip_epa`` and ``ref_epa`` (floats).
-        Optionally ``mlip_phonon_freq`` and ``ref_phonon_freq`` (float or None).
-    phonon_cutoff
-        Threshold in THz; a structure is "stable" if its min phonon freq >= this value.
-    stable_only
-        When *True* and phonon data is available on both sides, restrict the
-        ranking comparison to structures classified as dynamically stable by
-        **both** the MLIP and the reference calculator.
-
-    Returns
-    -------
-    dict
-        ``kendall_tau``, ``p_value``, ``mae_epa``, ``n_structures``,
-        ``stable_only_applied`` (bool indicating whether the filter was used).
-        Returns ``None`` values for tau/p_value/mae if fewer than 2 structures remain.
-    """
     from scipy.stats import kendalltau
 
     subset = list(results)
@@ -175,23 +146,6 @@ def compute_stability_metrics(
     results: Sequence[dict],
     phonon_cutoff: float = -0.15,
 ) -> dict | None:
-    """Compute phonon-stability classification metrics (MLIP vs reference).
-
-    Treats the reference calculator's phonon classification as ground truth.
-
-    Parameters
-    ----------
-    results
-        Each dict must have ``mlip_phonon_freq`` and ``ref_phonon_freq``.
-    phonon_cutoff
-        Threshold in THz.
-
-    Returns
-    -------
-    dict or None
-        ``precision``, ``recall``, ``f1``, ``n_total``, ``n_stable_ref``,
-        ``n_stable_mlip``.  Returns *None* when phonon data is incomplete.
-    """
     valid = [
         r
         for r in results

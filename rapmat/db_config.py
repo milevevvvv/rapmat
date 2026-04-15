@@ -1,30 +1,9 @@
-"""Database configuration: loading, interactive prompting, and store factory.
-
-The persisted configuration lives in ``db.toml`` inside the user config
-directory.  The file has two sections::
-
-    [general]
-    mode = "local"          # "local" | "remote"
-    db_path = ""            # optional path
-
-    [server]
-    url = "ws://localhost:8000/rpc"
-    namespace = "rapmat"
-    database = "main"
-    username = ""
-    password = ""
-
-``[general].mode`` is read by ``resolve_store`` when ``DbMode.AUTO`` is
-active (the default for TUI and most CLI commands).
-"""
-
-import os
 import tomllib
+
 from pathlib import Path
 
-from rapmat.config import APP_CONFIG_DIR, APP_DATA_DIR, DbMode
-from rapmat.config import DbParams
 from rapmat.storage.base import StructureStore
+from rapmat.config import APP_CONFIG_DIR, APP_DATA_DIR
 
 _DB_CONFIG_FILE = APP_CONFIG_DIR / "db.toml"
 
@@ -48,11 +27,6 @@ _GENERAL_DEFAULTS: dict[str, str] = {
 
 
 def load_db_config() -> dict | None:
-    """Read saved config from ``db.toml``, override server keys with env vars.
-
-    Returns a dict with ``"general"`` and ``"server"`` sub-dicts, or
-    ``None`` when no config file exists and no env vars are set.
-    """
     general: dict | None = None
     server: dict | None = None
 
@@ -72,7 +46,6 @@ def load_db_config() -> dict | None:
 
 
 def get_active_mode() -> str:
-    """Return the saved ``general.mode`` string, defaulting to ``"local"``."""
     full = load_db_config()
     if full is None:
         return "local"
@@ -84,11 +57,6 @@ def save_db_config(
     general: dict | None = None,
     server: dict | None = None,
 ) -> None:
-    """Write config to ``db.toml``.
-
-    Merges supplied sections with current on-disk values so callers only
-    need to pass the keys they want to change.
-    """
     existing = load_db_config() or {
         "general": dict(_GENERAL_DEFAULTS),
         "server": dict(_SERVER_DEFAULTS),
@@ -108,7 +76,6 @@ def save_db_config(
 
 
 def clear_db_config() -> bool:
-    """Delete saved ``db.toml``. Returns ``True`` if a file was removed."""
     if _DB_CONFIG_FILE.is_file():
         _DB_CONFIG_FILE.unlink()
         return True
@@ -158,7 +125,3 @@ def _make_surreal_remote(srv: dict) -> "StructureStore":
         username=srv.get("username"),
         password=srv.get("password"),
     )
-
-
-
-

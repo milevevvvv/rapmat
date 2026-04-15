@@ -1,18 +1,9 @@
-"""Results viewer screen for the Rapmat TUI."""
-
-from ase import Atoms
-
 from rapmat.tui.router import ScreenRouter
 from rapmat.tui.state import AppState
 from rapmat.tui.screens.base_results import BaseResultsScreen, _dyn_stability
 
+
 class ResultsScreen(BaseResultsScreen):
-    """CSP results viewer screen.
-
-    Fetches relaxed structures for ``state.active_run`` from the store
-    and displays them in an interactive table with a details panel.
-    """
-
     title = "Results"
 
     def __init__(self, state: "AppState", router: "ScreenRouter") -> None:
@@ -122,8 +113,6 @@ class ResultsScreen(BaseResultsScreen):
         return cols
 
     def _format_row(self, result: dict) -> list[str]:
-        # Handle cases where structure_id might be long/prefixed.
-        # Use the rightmost 10 chars for a cleaner display.
         full_id = str(result.get("structure_id", "N/A"))
         short_id = full_id.split("/")[-1] if "/" in full_id else full_id
         if len(short_id) > 10:
@@ -139,10 +128,10 @@ class ResultsScreen(BaseResultsScreen):
         if self._pressure_gpa > 0:
             h = result.get("enthalpy_per_atom")
             row.append(f"{h:.4f}" if h is not None else "N/A")
-        
-        fmax = result.get('fmax')
+
+        fmax = result.get("fmax")
         row.append(f"{fmax:.3f}" if fmax is not None else "N/A")
-        
+
         if self._show_thickness:
             t = result.get("thickness")
             row.append("" if t is None else f"{t:.2f}")
@@ -152,7 +141,7 @@ class ResultsScreen(BaseResultsScreen):
         if self._show_duplicate_col:
             dup = result.get("duplicate")
             row.append("Yes" if dup is True else ("No" if dup is False else ""))
-        
+
         conv = result.get("converged")
         row.append("OK" if conv is True or conv is None else "Unconv")
         return row
@@ -171,16 +160,14 @@ class ResultsScreen(BaseResultsScreen):
             self._state.store.update_run_config(self._run_name, config)
 
     def keypress(self, size: tuple, key: str) -> str | None:
-        # Capital S also saves (base only binds lowercase s)
         if key == "v":
             from rapmat.tui.screens.eval import EvalScreen
-            
-            # Pass only the IDs currently surviving the user's active UI filters 
-            # (Thickness, Non-converged, Duplicates)
+
             display_results = list(self._get_display_results())
             filtered_ids = [r["structure_id"] for r in display_results]
 
-            self._router.push(EvalScreen(self._state, self._router, self._run_name, filtered_ids))
+            self._router.push(
+                EvalScreen(self._state, self._router, self._run_name, filtered_ids)
+            )
             return None
         return super().keypress(size, key)
-

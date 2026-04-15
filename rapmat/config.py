@@ -1,10 +1,12 @@
 import json
 import tomllib
+
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 
 import platformdirs
+
 from rapmat.calculators import Calculators
 
 APP_NAME = "rapmat-materials"
@@ -18,20 +20,6 @@ APP_DATA_DIR = Path(platformdirs.user_data_dir(APP_NAME))
 
 @dataclass
 class CalculatorParams:
-    """Shared calculator options.
-
-    Parameters
-    ----------
-    calculator_name
-        Which MLIP/DFT calculator to use.
-    workdir
-        Working directory for calculator files. A temporary directory is used when omitted.
-    calculator_config
-        Path to a TOML file with calculator-specific settings (e.g. VASP INCAR params).
-    calc_opt
-        Repeatable KEY=VALUE overrides applied on top of the config file.
-    """
-
     calculator_name: Calculators = Calculators.MATTERSIM
     workdir: str | None = None
     calculator_config: str | None = None
@@ -39,7 +27,6 @@ class CalculatorParams:
 
 
 def _parse_calc_opt_value(raw: str) -> object:
-    """Try to interpret a calc-opt value as JSON; fall back to plain string."""
     try:
         return json.loads(raw)
     except (json.JSONDecodeError, ValueError):
@@ -47,11 +34,6 @@ def _parse_calc_opt_value(raw: str) -> object:
 
 
 def resolve_calculator_config(calc: CalculatorParams) -> dict:
-    """Merge a TOML config file and calc-opt overrides into a single dict.
-
-    Priority: calc_opt > TOML file > ASE/calculator defaults.
-    Returns an empty dict when neither source is provided.
-    """
     config: dict = {}
 
     if calc.calculator_config is not None:
@@ -75,8 +57,6 @@ def resolve_calculator_config(calc: CalculatorParams) -> dict:
 
 @dataclass
 class PhononParams:
-    """Shared phonon calculation options."""
-
     phonon_supercell: tuple[int, int, int] = (3, 3, 3)
     phonon_mesh: tuple[int, int, int] = (20, 20, 20)
     phonon_displacement: float = 1e-2
@@ -85,8 +65,6 @@ class PhononParams:
 
 @dataclass
 class DedupParams:
-    """Shared deduplication options."""
-
     dedup: bool = False
     dedup_threshold: float = 1e-2
     pymatgen_dedup: bool = False
@@ -99,8 +77,6 @@ class DedupParams:
 
 @dataclass
 class SanityParams:
-    """Physical sanity filter options for relaxed structures."""
-
     min_dist: float = 0.5
     sanity_pymatgen: bool = False
     sanity_pymatgen_tol: float = 0.5
@@ -108,8 +84,6 @@ class SanityParams:
 
 @dataclass
 class SymmetryParams:
-    """Shared symmetry-detection options."""
-
     symprec: float = 1e-3
 
 
@@ -119,8 +93,6 @@ class SymmetryParams:
 
 
 class DbMode(str, Enum):
-    """Database connection mode."""
-
     AUTO = "auto"
     FILE = "file"
     MEMORY = "memory"
@@ -128,26 +100,11 @@ class DbMode(str, Enum):
 
 
 class DbBackend(str, Enum):
-    """Storage backend engine."""
-
     SURREAL = "surreal"
+
 
 @dataclass
 class DbParams:
-    """Shared database connection options.
-
-    Parameters
-    ----------
-    db_mode
-        Connection mode: ``file`` (embedded persistent, default),
-        ``memory`` (embedded in-memory), or ``server`` (dedicated SurrealDB
-        instance via WebSocket).
-    db_path
-        Directory for the embedded file-based DB (only used with ``--db file``).
-    db_backend
-        Storage backend: ``surreal`` (default).
-    """
-
     db_mode: DbMode = DbMode.AUTO
     db_path: str = str(APP_DATA_DIR / "surrealdb")
     db_backend: DbBackend = DbBackend.SURREAL

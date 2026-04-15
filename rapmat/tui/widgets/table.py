@@ -1,25 +1,9 @@
-"""Reusable table widgets for the Rapmat TUI."""
+import urwid
 
 from typing import Callable
 
-import urwid
-
 
 class SelectableRow(urwid.WidgetWrap):
-    """A single focusable table row.
-
-    Parameters
-    ----------
-    data:
-        The raw dict this row represents (accessible as ``.data``).
-    texts:
-        One string per column to display.
-    widths:
-        Column widths in characters (must match *texts* length).
-    attr:
-        Normal palette attribute name (e.g. ``"body"``, ``"unconv"``).
-    """
-
     signals = ["select"]
 
     def __init__(
@@ -48,8 +32,6 @@ class SelectableRow(urwid.WidgetWrap):
 
 
 class _TableListBox(urwid.ListBox):
-    """ListBox that forwards focus-change events to the parent table."""
-
     def __init__(
         self, walker: urwid.SimpleFocusListWalker, table: "SortableTable"
     ) -> None:
@@ -68,29 +50,6 @@ class _TableListBox(urwid.ListBox):
 
 
 class SortableTable(urwid.WidgetWrap):
-    """Scrollable table with a fixed column-header row.
-
-    Parameters
-    ----------
-    columns:
-        List of ``(header_label, width)`` tuples.
-    row_data:
-        Initial list of dicts to display.
-    format_row:
-        Callable ``(row_dict) -> list[str]`` producing one string per column.
-    attr_fn:
-        Optional callable ``(row_dict) -> str`` returning a palette attribute
-        name for the row.  Defaults to ``"body"`` for every row.
-    on_focus_change:
-        Optional callback called whenever the focused row changes.
-        Receives the focused ``dict`` (or ``None``).
-
-    Signals
-    -------
-    ``"select"``
-        Emitted when Enter is pressed on a row.  Passes the row ``dict``.
-    """
-
     signals = ["select"]
 
     def __init__(
@@ -139,12 +98,10 @@ class SortableTable(urwid.WidgetWrap):
     # ------------------------------------------------------------------ #
 
     def set_data(self, rows: list[dict]) -> None:
-        """Replace the displayed rows with *rows*."""
         self._data = list(rows)
         self._rebuild_walker()
 
     def update_columns(self, columns: list[tuple[str, int]]) -> None:
-        """Update the table's column definitions and rewrite the fixed header."""
         self._columns = columns
         widths = [w for _, w in columns]
         titles = [t for t, _ in columns]
@@ -161,15 +118,12 @@ class SortableTable(urwid.WidgetWrap):
         self._rebuild_walker()
 
     def get_focused_row(self) -> dict | None:
-        """Return the currently focused row dict, or ``None``."""
         widget = self._listbox.focus
         if widget is not None and isinstance(widget, SelectableRow):
             return widget.data
         return None
 
     def sort_by(self, col_index: int, reverse: bool = False) -> None:
-        """Sort displayed rows by the value at *col_index* in the formatted text."""
-
         def _key(row: dict) -> str:
             texts = self._format_row(row)
             if col_index < len(texts):

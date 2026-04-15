@@ -1,9 +1,9 @@
+import numpy as np
+
+from ase import Atoms
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import List, Optional
-
-import numpy as np
-from ase import Atoms
 
 # ------------------------------------------------------------------ #
 #  Descriptor ABC
@@ -11,41 +11,19 @@ from ase import Atoms
 
 
 class StructureDescriptor(ABC):
-    """Abstract base class for converting atomic structures to vector descriptors."""
+    @abstractmethod
+    def dimension(self) -> int: ...
 
     @abstractmethod
-    def dimension(self) -> int:
-        """Returns the dimension of the descriptor vector."""
-        ...
+    def compute(self, atoms: Atoms) -> np.ndarray: ...
 
     @abstractmethod
-    def compute(self, atoms: Atoms) -> np.ndarray:
-        """Computes the descriptor vector for the given structure.
-
-        Returns a 1-D numpy array of floats.
-        """
-        ...
+    def code_version(self) -> str: ...
 
     @abstractmethod
-    def code_version(self) -> str:
-        """Returns the descriptor implementation's code version (e.g. '1.0')."""
-        ...
-
-    @abstractmethod
-    def descriptor_id(self) -> str:
-        """Returns a stable hash id for this descriptor configuration.
-
-        The id is derived from descriptor name + params + descriptor code
-        version, so that the same configuration yields the same id across runs.
-        """
-        ...
+    def descriptor_id(self) -> str: ...
 
     def vec_col_name(self) -> str:
-        """Short identifier derived from :meth:`descriptor_id`.
-
-        Returns ``vec_`` followed by the first 12 hex characters of the
-        descriptor id.
-        """
         # TODO: move to storage backends
         return f"vec_{self.descriptor_id()[:12]}"
 
@@ -56,10 +34,6 @@ class StructureDescriptor(ABC):
 
 
 class StructureStore(ABC):
-    """Backend-agnostic interface for persisting CSP structures and metadata."""
-
-    # -- descriptor registration ----------------------------------------
-
     @abstractmethod
     def register_descriptor(
         self,
@@ -67,16 +41,8 @@ class StructureStore(ABC):
         dim: int,
         meta: Optional[dict] = None,
     ) -> str:
-        """Register a descriptor configuration.
-
-        Ensures the backend is ready to store / search vectors of the given
-        dimension.  Returns a short identifier for the descriptor space
-        (e.g. ``vec_<hash>``).
-        """
         # TODO: auto register on first use
         ...
-
-    # -- run management -------------------------------------------------
 
     @abstractmethod
     def create_run(
@@ -91,14 +57,10 @@ class StructureStore(ABC):
     def get_run_metadata(self, name: str) -> Optional[dict]: ...
 
     @abstractmethod
-    def update_run_config(self, name: str, config: dict) -> None:
-        """Update the configuration dictionary for an existing run."""
-        ...
+    def update_run_config(self, name: str, config: dict) -> None: ...
 
     @abstractmethod
-    def delete_run(self, run_name: str) -> None:
-        """Permanently delete a run and all its associated structures."""
-        ...
+    def delete_run(self, run_name: str) -> None: ...
 
     @abstractmethod
     def list_runs(self) -> List[dict]: ...
@@ -121,38 +83,16 @@ class StructureStore(ABC):
     @abstractmethod
     def reclaim_stale_runs(self, timeout_minutes: int = 10) -> list[str]: ...
 
-    # -- structures -----------------------------------------------------
-
     @abstractmethod
     def add_structures(self, run_name: str, structures: List[dict]) -> int:
-        """Bulk-insert structure records.
-
-        Each dict must contain at least ``"id"`` and ``"status"``.  Optional
-        keys include ``"atoms"`` (ASE Atoms), ``"vector"`` (np.ndarray),
-        ``"gen_spg"``, ``"gen_fu"``, ``"metadata"`` (dict with energy etc.),
-        and ``"thickness"``.
-
-        Returns the number of records inserted.
-        """
         # TODO: move to objects with defaults instead of just dicts
         ...
 
     @abstractmethod
-    def update_structure(self, struct_id: str, **fields) -> None:
-        """Update fields on a single structure record.
-
-        Supported keyword arguments mirror the structure columns:
-        ``status``, ``atoms``, ``vector``, ``formula``, ``energy_per_atom``,
-        ``energy_total``, ``fmax``, ``converged``, ``thickness``,
-        ``enthalpy_per_atom``, ``volume``, ``min_phonon_freq``,
-        ``metadata`` (convenience dict unpacked into the above scalars).
-        """
-        ...
+    def update_structure(self, struct_id: str, **fields) -> None: ...
 
     @abstractmethod
-    def clear_run_phonon_results(self, run_name: str) -> None:
-        """Reset ``min_phonon_freq`` to *None* for every structure in a run."""
-        ...
+    def clear_run_phonon_results(self, run_name: str) -> None: ...
 
     @abstractmethod
     def get_structures(
@@ -163,29 +103,10 @@ class StructureStore(ABC):
         statuses: Optional[tuple[str, ...]] = None,
         fields: Optional[list[str]] = None,
         symprec: float = 1e-3,
-    ) -> List[dict]:
-        """Retrieve structures for a run, optionally filtered by status.
-
-        Parameters
-        ----------
-        status
-            Single status string filter (convenience shorthand).
-        statuses
-            Tuple of allowed statuses (takes precedence over *status*).
-        fields
-            Optional list of field names to return.  If ``None`` the backend
-            returns its full default set (id, atoms, energy, status, ...).
-        symprec
-            Tolerance for space-group detection on the returned atoms.
-        """
-        ...
+    ) -> List[dict]: ...
 
     @abstractmethod
-    def count(self) -> int:
-        """Total number of structure records."""
-        ...
-
-    # -- vector search --------------------------------------------------
+    def count(self) -> int: ...
 
     @abstractmethod
     def find_neighbors(
@@ -197,15 +118,7 @@ class StructureStore(ABC):
         run_id: Optional[str] = None,
         statuses: tuple[str, ...] = ("relaxed",),
         exclude_ids: Optional[List[str]] = None,
-    ) -> List[dict]:
-        """Return structures whose descriptor vector is within *threshold*.
-
-        Each returned dict contains at least ``"id"``, ``"atoms"``,
-        ``"energy_per_atom"``, ``"distance"``, and ``"forces"``.
-        """
-        ...
-
-    # -- studies --------------------------------------------------------
+    ) -> List[dict]: ...
 
     @abstractmethod
     def create_study(
@@ -221,22 +134,16 @@ class StructureStore(ABC):
     def get_study(self, study_id: str) -> Optional[dict]: ...
 
     @abstractmethod
-    def update_study(self, study_id: str, fields: dict) -> None:
-        """Update fields on a study record (e.g. config)."""
-        ...
+    def update_study(self, study_id: str, fields: dict) -> None: ...
 
     @abstractmethod
-    def delete_study(self, study_id: str) -> None:
-        """Permanently delete a study and all its associated runs and structures."""
-        ...
+    def delete_study(self, study_id: str) -> None: ...
 
     @abstractmethod
     def list_studies(self) -> List[dict]: ...
 
     @abstractmethod
     def get_study_runs(self, study_id: str) -> List[dict]: ...
-
-    # -- evaluations ----------------------------------------------------
 
     @abstractmethod
     def add_evaluation(
@@ -253,9 +160,7 @@ class StructureStore(ABC):
     @abstractmethod
     def clear_evaluations(
         self, run_name: str, calculator: Optional[str] = None
-    ) -> None:
-        """Delete evaluation records for a specific run (and optionally calculator)."""
-        ...
+    ) -> None: ...
 
     @abstractmethod
     def has_evaluation(
@@ -267,15 +172,8 @@ class StructureStore(ABC):
         self, run_name: str, calculator: Optional[str] = None
     ) -> List[dict]: ...
 
-    # -- lifecycle ------------------------------------------------------
-
     @abstractmethod
     def close(self) -> None: ...
-
-    # -- convenience (non-abstract) -------------------------------------
-    # These delegate to the ABC primitives so that old call sites keep
-    # working with any backend.  SurrealDBStore overrides most of these
-    # with its own native implementations.
 
     def update_structure_phonon(self, struct_id: str, min_phonon_freq: float) -> None:
         self.update_structure(struct_id, min_phonon_freq=min_phonon_freq)
@@ -315,7 +213,6 @@ class StructureStore(ABC):
         run_id: str,
         statuses: tuple = ("relaxed",),
     ) -> List[dict]:
-        """Load structures for analysis -- atoms + metadata, no vectors."""
         rows = self.get_structures(run_id, statuses=statuses)
         results: List[dict] = []
         for r in rows:
@@ -391,5 +288,4 @@ class StructureStore(ABC):
 
     @classmethod
     def from_path(cls, db_path: Path, **kwargs) -> "StructureStore":
-        """Create a persistent store backed by a directory on disk."""
         raise NotImplementedError

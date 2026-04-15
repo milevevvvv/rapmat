@@ -1,5 +1,3 @@
-"""Home screen for the Rapmat TUI."""
-
 import urwid
 
 from rapmat.tui.widgets.table import SortableTable
@@ -9,7 +7,6 @@ from rapmat.tui.state import AppState
 
 
 def _format_run_status(counts: dict[str, int]) -> str:
-    """Build a compact plain-text status summary for a run."""
     parts: list[str] = []
     relaxed = counts.get("relaxed", 0)
     generating = counts.get("generating", 0)
@@ -49,8 +46,6 @@ _RECENT_COLS = [
 
 
 class HomeScreen:
-    """Dashboard screen shown on TUI launch."""
-
     title = "Home"
 
     def __init__(self, state: "AppState", router: "ScreenRouter") -> None:
@@ -94,7 +89,6 @@ class HomeScreen:
     # ------------------------------------------------------------------ #
 
     def _build_widget(self) -> urwid.Widget:
-        # ── Left panel: grouped quick actions ─────────────────────────
         def _btn(label: str, callback) -> urwid.Widget:
             btn = urwid.Button(label, on_press=callback)
             return urwid.AttrMap(btn, "menu_item", focus_map="menu_focus")
@@ -105,22 +99,17 @@ class HomeScreen:
         actions = urwid.Pile(
             [
                 urwid.Text(("section", " Quick Actions"), align="left"),
-                # -- CSP --
                 *_section("CSP"),
                 _btn("[N] New CSP Run", self._go_new_run),
-                # -- Studies --
                 *_section("Studies"),
                 _btn("[S] Studies", self._go_studies),
-                # -- Tools --
                 *_section("Tools"),
                 _btn("[P] Phonon", self._go_phonon),
-                #_btn("[F] Defects", self._go_defects),
+                # _btn("[F] Defects", self._go_defects),
                 # NOTE: still in development
-                # -- Settings --
                 *_section("Settings"),
                 _btn("[D] DB Settings", self._go_db_settings),
                 _btn("[I] Status", self._go_status),
-                # -- Quit --
                 urwid.Divider("─"),
                 _btn("[Q] Quit", self._do_quit),
             ]
@@ -136,7 +125,6 @@ class HomeScreen:
             )
         )
 
-        # ── Right panel: recent runs ───────────────────────────────────
         recent_data = self._get_recent_runs()
         self._recent_table = SortableTable(
             columns=_RECENT_COLS,
@@ -183,8 +171,13 @@ class HomeScreen:
     def _get_hw_label(self) -> str:
         try:
             import torch
+
             if torch.cuda.is_available():
-                name = torch.cuda.get_device_name(0) if torch.cuda.device_count() > 0 else "Unknown GPU"
+                name = (
+                    torch.cuda.get_device_name(0)
+                    if torch.cuda.device_count() > 0
+                    else "Unknown GPU"
+                )
                 return f"⚡  CUDA ({name})"
             return "🖥️  CPU (No GPU detected)"
         except ImportError:

@@ -17,7 +17,6 @@ from rapmat.db_config import (
 )
 from rapmat.storage import SurrealDBStore
 
-
 # ------------------------------------------------------------------ #
 #  load_db_config / clear_db_config
 # ------------------------------------------------------------------ #
@@ -94,7 +93,13 @@ class TestRunLocking:
         s.close()
 
     def test_claim_and_release(self, store):
-        store.create_study(study_id="lock-run", system="Test", domain="bulk", calculator="MATTERSIM", config={})
+        store.create_study(
+            study_id="lock-run",
+            system="Test",
+            domain="bulk",
+            calculator="MATTERSIM",
+            config={},
+        )
         store.create_run(name="lock-run", worker_id="w1", study_id="lock-run")
         assert store.claim_run("lock-run", "w1")
 
@@ -108,7 +113,13 @@ class TestRunLocking:
         assert meta["worker_id"] is None
 
     def test_double_claim_fails(self, store):
-        store.create_study(study_id="dc-run", system="Test", domain="bulk", calculator="MATTERSIM", config={})
+        store.create_study(
+            study_id="dc-run",
+            system="Test",
+            domain="bulk",
+            calculator="MATTERSIM",
+            config={},
+        )
         store.create_run(name="dc-run", worker_id="w1", study_id="dc-run")
         assert store.claim_run("dc-run", "w1")
 
@@ -116,7 +127,13 @@ class TestRunLocking:
         assert store.claim_run("dc-run", "w2") is False
 
     def test_claim_after_release(self, store):
-        store.create_study(study_id="re-run", system="Test", domain="bulk", calculator="MATTERSIM", config={})
+        store.create_study(
+            study_id="re-run",
+            system="Test",
+            domain="bulk",
+            calculator="MATTERSIM",
+            config={},
+        )
         store.create_run(name="re-run", worker_id="w1", study_id="re-run")
         store.claim_run("re-run", "w1")
         store.release_run("re-run", "pending")
@@ -126,7 +143,13 @@ class TestRunLocking:
         assert meta["worker_id"] == "w2"
 
     def test_heartbeat_update(self, store):
-        store.create_study(study_id="hb-run", system="Test", domain="bulk", calculator="MATTERSIM", config={})
+        store.create_study(
+            study_id="hb-run",
+            system="Test",
+            domain="bulk",
+            calculator="MATTERSIM",
+            config={},
+        )
         store.create_run(name="hb-run", worker_id="w1", study_id="hb-run")
         store.claim_run("hb-run", "w1")
         store.update_heartbeat("hb-run", "w1")
@@ -135,7 +158,13 @@ class TestRunLocking:
         assert meta["run_status"] == "processing"
 
     def test_reclaim_stale_runs(self, store):
-        store.create_study(study_id="stale-run", system="Test", domain="bulk", calculator="MATTERSIM", config={})
+        store.create_study(
+            study_id="stale-run",
+            system="Test",
+            domain="bulk",
+            calculator="MATTERSIM",
+            config={},
+        )
         store.create_run(name="stale-run", worker_id="old-w", study_id="stale-run")
         store.claim_run("stale-run", "old-w")
 
@@ -154,7 +183,13 @@ class TestRunLocking:
         assert meta["worker_id"] is None
 
     def test_reclaim_ignores_active_runs(self, store):
-        store.create_study(study_id="active-run", system="Test", domain="bulk", calculator="MATTERSIM", config={})
+        store.create_study(
+            study_id="active-run",
+            system="Test",
+            domain="bulk",
+            calculator="MATTERSIM",
+            config={},
+        )
         store.create_run(name="active-run", worker_id="w1", study_id="active-run")
         store.claim_run("active-run", "w1")
         store.update_heartbeat("active-run", "w1")
@@ -163,15 +198,27 @@ class TestRunLocking:
         assert "active-run" not in reclaimed
 
     def test_create_run_sets_initial_status(self, store):
-        store.create_study(study_id="init-run", system="Test", domain="bulk", calculator="MATTERSIM", config={})
+        store.create_study(
+            study_id="init-run",
+            system="Test",
+            domain="bulk",
+            calculator="MATTERSIM",
+            config={},
+        )
         store.create_run(name="init-run", worker_id="w1", study_id="init-run")
         meta = store.get_run_metadata("init-run")
         assert meta["run_status"] == "generating"
         assert meta["worker_id"] == "w1"
 
     def test_create_run_without_worker(self, store):
-        store.create_study(study_id="no-w-run", system="Test", domain="bulk", calculator="MATTERSIM", config={})
-        store.create_run(name="no-w-run",  study_id="no-w-run")
+        store.create_study(
+            study_id="no-w-run",
+            system="Test",
+            domain="bulk",
+            calculator="MATTERSIM",
+            config={},
+        )
+        store.create_run(name="no-w-run", study_id="no-w-run")
         meta = store.get_run_metadata("no-w-run")
         assert meta["run_status"] == "generating"
         assert meta["worker_id"] is None
@@ -185,8 +232,14 @@ class TestRunLocking:
 class TestStoreAuth:
     def test_init_without_auth(self, tmp_path):
         store = SurrealDBStore.from_path(tmp_path / "no_auth_db")
-        store.create_study(study_id="auth-run", system="Test", domain="bulk", calculator="MATTERSIM", config={})
-        store.create_run(name="auth-run",  study_id="auth-run")
+        store.create_study(
+            study_id="auth-run",
+            system="Test",
+            domain="bulk",
+            calculator="MATTERSIM",
+            config={},
+        )
+        store.create_run(name="auth-run", study_id="auth-run")
         assert store.get_run_metadata("auth-run") is not None
         store.close()
 
@@ -196,7 +249,13 @@ class TestStoreAuth:
             username=None,
             password=None,
         )
-        store.create_study(study_id="none-auth-run", system="Test", domain="bulk", calculator="MATTERSIM", config={})
-        store.create_run(name="none-auth-run",  study_id="none-auth-run")
+        store.create_study(
+            study_id="none-auth-run",
+            system="Test",
+            domain="bulk",
+            calculator="MATTERSIM",
+            config={},
+        )
+        store.create_run(name="none-auth-run", study_id="none-auth-run")
         assert store.get_run_metadata("none-auth-run") is not None
         store.close()

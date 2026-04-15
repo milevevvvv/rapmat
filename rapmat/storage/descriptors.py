@@ -1,18 +1,14 @@
 import hashlib
-from typing import List
-
 import numpy as np
+
 from ase import Atoms
+from typing import List
 from dscribe.descriptors import SOAP
+
 from rapmat.storage.base import StructureDescriptor
 
 
 class SOAPDescriptor(StructureDescriptor):
-    """
-    Structure descriptor using Smooth Overlap of Atomic Positions (SOAP).
-    Uses global averaging (average='inner') to produce a single vector per structure.
-    """
-
     def __init__(
         self,
         species: List[str],
@@ -21,14 +17,6 @@ class SOAPDescriptor(StructureDescriptor):
         l_max: int = 6,
         periodic: bool = True,
     ):
-        """
-        Args:
-            species: List of atomic species (elements) present in the structures.
-            r_cut: Cutoff radius in Angstroms.
-            n_max: Number of radial basis functions.
-            l_max: Maximum degree of spherical harmonics.
-            periodic: Whether the system is periodic.
-        """
         self._soap = SOAP(
             species=species,
             periodic=periodic,

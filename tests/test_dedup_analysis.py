@@ -245,7 +245,13 @@ class TestStoreAnalysis:
     def test_returns_relaxed_structures(self, tmp_path, soap):
         store = SurrealDBStore.from_path(tmp_path / "analysis_db")
         store.register_descriptor(soap.descriptor_id(), soap.dimension())
-        store.create_study(study_id="run1", system="Test", domain="bulk", calculator="MATTERSIM", config={})
+        store.create_study(
+            study_id="run1",
+            system="Test",
+            domain="bulk",
+            calculator="MATTERSIM",
+            config={},
+        )
         store.create_run(name="run1", study_id="run1")
 
         cu = bulk("Cu", "fcc", a=3.615)
@@ -268,7 +274,13 @@ class TestStoreAnalysis:
     def test_returns_generated_structures(self, tmp_path, soap):
         store = SurrealDBStore.from_path(tmp_path / "analysis_gen_db")
         store.register_descriptor(soap.descriptor_id(), soap.dimension())
-        store.create_study(study_id="run1", system="Test", domain="bulk", calculator="MATTERSIM", config={})
+        store.create_study(
+            study_id="run1",
+            system="Test",
+            domain="bulk",
+            calculator="MATTERSIM",
+            config={},
+        )
         store.create_run(name="run1", study_id="run1")
 
         cu = bulk("Cu", "fcc", a=3.615)
@@ -282,7 +294,13 @@ class TestStoreAnalysis:
     def test_filters_by_status(self, tmp_path, soap):
         store = SurrealDBStore.from_path(tmp_path / "analysis_filter_db")
         store.register_descriptor(soap.descriptor_id(), soap.dimension())
-        store.create_study(study_id="run1", system="Test", domain="bulk", calculator="MATTERSIM", config={})
+        store.create_study(
+            study_id="run1",
+            system="Test",
+            domain="bulk",
+            calculator="MATTERSIM",
+            config={},
+        )
         store.create_run(name="run1", study_id="run1")
 
         cu = bulk("Cu", "fcc", a=3.615)

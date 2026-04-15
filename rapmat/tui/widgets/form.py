@@ -1,9 +1,7 @@
-"""Form widgets for the Rapmat TUI."""
-
-from dataclasses import dataclass, field
-from typing import Any
-
 import urwid
+
+from typing import Any
+from dataclasses import dataclass, field
 
 from rapmat.tui.widgets.dropdown import DropdownSelect
 
@@ -16,7 +14,7 @@ from rapmat.tui.widgets.dropdown import DropdownSelect
 class _FieldSpec:
     key: str
     label: str
-    kind: str  # "text" | "int" | "float" | "checkbox" | "radio" | "dropdown" | "tuple"
+    kind: str
     widget: urwid.Widget
     radio_buttons: list[urwid.RadioButton] = field(default_factory=list)
     int_edits: list[urwid.IntEdit] = field(default_factory=list)
@@ -34,7 +32,6 @@ def text_field(
     default: str = "",
     validator=None,
 ) -> _FieldSpec:
-    """Single-line text input."""
     edit = urwid.Edit(caption="", edit_text=str(default))
     return _FieldSpec(
         key=key, label=label, kind="text", widget=edit, validator=validator
@@ -47,7 +44,6 @@ def int_field(
     default: int = 0,
     validator=None,
 ) -> _FieldSpec:
-    """Integer input."""
     edit = urwid.IntEdit(default=int(default))
     return _FieldSpec(
         key=key, label=label, kind="int", widget=edit, validator=validator
@@ -60,7 +56,6 @@ def float_field(
     default: float = 0.0,
     validator=None,
 ) -> _FieldSpec:
-    """Float input (stored as Edit, validated on get_values)."""
     edit = urwid.Edit(caption="", edit_text=str(default))
     return _FieldSpec(
         key=key, label=label, kind="float", widget=edit, validator=validator
@@ -72,7 +67,6 @@ def checkbox_field(
     label: str,
     default: bool = False,
 ) -> _FieldSpec:
-    """Boolean checkbox."""
     cb = urwid.CheckBox("", state=bool(default))
     return _FieldSpec(key=key, label=label, kind="checkbox", widget=cb)
 
@@ -83,7 +77,6 @@ def radio_field(
     options: list[str],
     default: int = 0,
 ) -> _FieldSpec:
-    """Radio button group (mutually exclusive)."""
     group: list[urwid.RadioButton] = []
     for i, opt in enumerate(options):
         rb = urwid.RadioButton(group, opt, state=(i == default))
@@ -100,7 +93,6 @@ def dropdown_field(
     options: list[str],
     default: int = 0,
 ) -> _FieldSpec:
-    """Popup-based dropdown selector."""
     dd = DropdownSelect(label="", options=options, default=default)
     return _FieldSpec(key=key, label=label, kind="dropdown", widget=dd)
 
@@ -111,7 +103,6 @@ def tuple_field(
     size: int = 3,
     default: tuple = (0, 0, 0),
 ) -> _FieldSpec:
-    """N integer inputs in a row (for supercell/mesh tuples)."""
     edits = [
         urwid.IntEdit(default=int(default[i]) if i < len(default) else 0)
         for i in range(size)
@@ -129,17 +120,6 @@ def tuple_field(
 
 
 class FormGroup(urwid.WidgetWrap):
-    """A ``Pile`` of labeled form fields.
-
-    Parameters
-    ----------
-    fields:
-        List of ``_FieldSpec`` instances created by the factory functions
-        above (``text_field``, ``int_field``, etc.).
-    label_width:
-        Column width reserved for field labels.
-    """
-
     def __init__(self, fields: list[_FieldSpec], label_width: int = 20) -> None:
         self._fields = fields
         self._label_width = label_width
@@ -170,14 +150,12 @@ class FormGroup(urwid.WidgetWrap):
     # ------------------------------------------------------------------ #
 
     def get_values(self) -> dict[str, Any]:
-        """Return a dict mapping each field's key to its current value."""
         result: dict[str, Any] = {}
         for spec in self._fields:
             result[spec.key] = self._read_value(spec)
         return result
 
     def set_values(self, vals: dict[str, Any]) -> None:
-        """Batch-set field values by key."""
         for spec in self._fields:
             if spec.key not in vals:
                 continue
@@ -205,26 +183,27 @@ class FormGroup(urwid.WidgetWrap):
                     edit.set_edit_text(str(int(val_i)))
 
     def get_widget(self, key: str) -> urwid.Widget | None:
-        """Get the underlying urwid widget for a specific field key."""
         for spec in self._fields:
             if spec.key == key:
                 return spec.widget
         return None
 
     def set_field_disabled(self, key: str, disabled: bool) -> None:
-        """Dynamically disable or enable a field using urwid.WidgetDisable."""
         for i, spec in enumerate(self._fields):
             if spec.key == key:
                 row = self._w.contents[i][0]
                 attr_map = row.contents[1][0]
-                if disabled and not isinstance(attr_map.original_widget, urwid.WidgetDisable):
+                if disabled and not isinstance(
+                    attr_map.original_widget, urwid.WidgetDisable
+                ):
                     attr_map.original_widget = urwid.WidgetDisable(spec.widget)
-                elif not disabled and isinstance(attr_map.original_widget, urwid.WidgetDisable):
+                elif not disabled and isinstance(
+                    attr_map.original_widget, urwid.WidgetDisable
+                ):
                     attr_map.original_widget = spec.widget
                 break
 
     def validate(self) -> list[str]:
-        """Return a list of validation error messages (empty = all valid)."""
         errors: list[str] = []
         for spec in self._fields:
             raw = self._read_value(spec)

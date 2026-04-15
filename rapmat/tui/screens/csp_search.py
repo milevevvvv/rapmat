@@ -1,12 +1,8 @@
-"""CSP Search (New Run) screen for the Rapmat TUI."""
-
 import uuid
-from pathlib import Path
-
-
 import urwid
 
 from rapmat.tui.widgets.dialog import ModalDialog
+from rapmat.tui.widgets.progress import ProgressPanel
 from rapmat.tui.widgets.form import (
     FormGroup,
     checkbox_field,
@@ -16,7 +12,7 @@ from rapmat.tui.widgets.form import (
     radio_field,
     text_field,
 )
-from rapmat.tui.widgets.progress import ProgressPanel
+
 
 from rapmat.tui.router import ScreenRouter
 from rapmat.tui.state import AppState
@@ -30,8 +26,6 @@ def _calc_options() -> list[str]:
 
 
 class CSPSearchScreen:
-    """New CSP run screen -- full parameter form + background execution."""
-
     title = "New CSP Run"
 
     def __init__(self, state: "AppState", router: "ScreenRouter") -> None:
@@ -89,14 +83,19 @@ class CSPSearchScreen:
         default_idx = 0
         if self._state.active_study and self._state.active_study in options:
             default_idx = options.index(self._state.active_study)
-            
+
         return FormGroup(
             [
                 dropdown_field("study", "Study", options, default=default_idx),
                 text_field(
-                    "formula", "Formula (e.g. Al2O3)", default="", validator=self._validate_formula
+                    "formula",
+                    "Formula (e.g. Al2O3)",
+                    default="",
+                    validator=self._validate_formula,
                 ),
-                checkbox_field("grid_search", "Compositional Grid Search", default=False),
+                checkbox_field(
+                    "grid_search", "Compositional Grid Search", default=False
+                ),
                 float_field("grid_step", "Grid Step Size", default=0.25),
                 int_field("fu_min", "Formula units min", default=2),
                 int_field("fu_max", "Formula units max", default=4),
@@ -129,7 +128,7 @@ class CSPSearchScreen:
     def _sync_grid_formula(self, _widget=None, _state=None) -> None:
         grid_cb = self._form.get_widget("grid_search")
         study_dd = self._form.get_widget("study")
-        
+
         if _widget == grid_cb:
             is_grid = _state
             study_raw = study_dd.value
@@ -140,17 +139,21 @@ class CSPSearchScreen:
             vals = self._form.get_values()
             is_grid = vals.get("grid_search", False)
             study_raw = vals.get("study", "— (none)")
-            
-        has_study = not (is_grid is False and isinstance(study_raw, str) and study_raw.startswith("—"))
+
+        has_study = not (
+            is_grid is False
+            and isinstance(study_raw, str)
+            and study_raw.startswith("—")
+        )
         if isinstance(study_raw, str) and study_raw.startswith("—"):
             has_study = False
         else:
             has_study = True
-            
+
         disable_formula = is_grid and has_study
-        
+
         self._form.set_field_disabled("formula", disable_formula)
-        
+
         if disable_formula:
             study = self._state.store.get_study(study_raw)
             if study and study.get("system"):
@@ -158,12 +161,12 @@ class CSPSearchScreen:
 
     def _build_frame(self) -> urwid.Frame:
         self._form = self._build_form()
-        
+
         study_dd = self._form.get_widget("study")
         urwid.connect_signal(study_dd, "change", self._sync_grid_formula)
         grid_cb = self._form.get_widget("grid_search")
         urwid.connect_signal(grid_cb, "change", self._sync_grid_formula)
-        
+
         self._error_text = urwid.Text("")
 
         listbox = urwid.ListBox(
@@ -243,7 +246,7 @@ class CSPSearchScreen:
         candidates = max(1, vals["candidates"])
         base_run_name = vals["run_name"].strip() or f"run-{uuid.uuid4().hex[:8]}"
         workers = max(1, vals["workers"])
-        
+
         is_grid_search = vals["grid_search"]
         grid_step = vals["grid_step"]
 
@@ -252,6 +255,7 @@ class CSPSearchScreen:
         elements = list(formula.keys())
 
         import random as _random
+
         seed_val = vals.get("seed", 0)
         if seed_val == 0:
             seed_val = _random.randint(1, 2**32 - 1)
@@ -260,7 +264,6 @@ class CSPSearchScreen:
         study_raw = vals["study"]
         if study_raw.startswith("—"):
             raise ValueError("You must select a valid Study to start a run.")
-            
 
         study_id = study_raw
 
@@ -272,41 +275,44 @@ class CSPSearchScreen:
         search_dim = 3 if domain == "bulk" else 2
 
         from rapmat.storage import SOAPDescriptor
+
         descriptor = SOAPDescriptor(species=elements)
         vec_col = store.register_descriptor(
             descriptor.descriptor_id(),
             descriptor.dimension(),
             meta={"type": "SOAP", "species": elements},
         )
-        
+
         runs_to_queue = []
         if is_grid_search:
             el_A, el_B = elements[0], elements[1]
             import numpy as np
-            ratios = np.arange(0.0, 1.0 + grid_step/2, grid_step)
+
+            ratios = np.arange(0.0, 1.0 + grid_step / 2, grid_step)
             for x in ratios:
                 y = 1.0 - x
-                
+
                 import math
+
                 def float_to_ratio(val, tol=1e-4):
                     for i in range(1, 100):
                         if abs(val * i - round(val * i)) < tol:
                             return round(val * i), i
                     return round(val * 100), 100
-                
+
                 nx, dx = float_to_ratio(x)
                 ny, dy = float_to_ratio(y)
                 lcm = abs(dx * dy) // math.gcd(dx, dy)
-                
+
                 int_x = int(nx * (lcm / dx))
                 int_y = int(ny * (lcm / dy))
-                
+
                 # Simplify
                 common = math.gcd(int_x, int_y)
                 if common > 0:
                     int_x //= common
                     int_y //= common
-                
+
                 sub_formula = {}
                 label = ""
                 if int_x > 0:
@@ -315,27 +321,27 @@ class CSPSearchScreen:
                 if int_y > 0:
                     sub_formula[el_B] = int_y
                     label += f"{el_B}{int_y if int_y > 1 else ''}"
-                    
+
                 sub_run_name = f"{base_run_name}-{label}"
                 runs_to_queue.append((sub_run_name, sub_formula))
         else:
             runs_to_queue.append((base_run_name, formula))
-            
+
         wid = uuid.uuid4().hex[:12]
-        
+
         def _cb(current, total, msg, is_log=True):
             if progress.cancelled:
                 raise KeyboardInterrupt("Cancelled by user")
             progress.update(current, total, msg)
             if is_log:
                 progress.log(msg)
-                
+
         total_runs = len(runs_to_queue)
         runs_created = []
 
         for i, (run_name, run_formula) in enumerate(runs_to_queue):
             progress.log(f"[{i+1}/{total_runs}] Queuing run '{run_name}'...")
-            
+
             run_config = {
                 "formula": run_formula,
                 "formula_units": [fu_min, fu_max],
@@ -345,7 +351,7 @@ class CSPSearchScreen:
                 "vec_col": vec_col,
                 "seed": seed_val,
             }
-            
+
             try:
                 store.create_run(
                     name=run_name,
@@ -372,14 +378,16 @@ class CSPSearchScreen:
         for i, (run_name, run_config) in enumerate(runs_created):
             cancel_flag = [False]
 
-            progress.log(f"[{i+1}/{len(runs_created)}] Starting generation phase for {run_name}...")
+            progress.log(
+                f"[{i+1}/{len(runs_created)}] Starting generation phase for {run_name}..."
+            )
             try:
                 with workdir_context(None) as workdir_path:
                     progress.log(f"Working directory: {workdir_path}")
 
                     meta = store.get_run_metadata(run_name) or {}
                     full_cfg = meta.get("config", run_config)
-                    
+
                     run_generation_loop(
                         run_name=run_name,
                         store=store,
@@ -391,11 +399,13 @@ class CSPSearchScreen:
                         cancel_flag=cancel_flag,
                         log_callback=progress.log,
                     )
-                    
+
                     if progress.cancelled or cancel_flag[0]:
                         raise KeyboardInterrupt("Cancelled by user")
-                    
-                    progress.log("Generation complete. Initializing calculator for processing...")
+
+                    progress.log(
+                        "Generation complete. Initializing calculator for processing..."
+                    )
                     store.set_run_status(run_name, "processing")
 
                     def _proc_cb(current, total, msg, is_log=True):
@@ -406,8 +416,10 @@ class CSPSearchScreen:
                         if is_log:
                             progress.log(msg)
 
-                    progress.log(f"[{i+1}/{len(runs_created)}] Starting processing phase for {run_name}...")
-                    
+                    progress.log(
+                        f"[{i+1}/{len(runs_created)}] Starting processing phase for {run_name}..."
+                    )
+
                     t0 = time.monotonic()
                     run_processing_loop(
                         run_name=run_name,
@@ -420,8 +432,10 @@ class CSPSearchScreen:
                         cancel_flag=cancel_flag,
                     )
                     t1 = time.monotonic()
-                    progress.log(f"Run '{run_name}' computation finished in {t1 - t0:.2f} seconds.")
-                    
+                    progress.log(
+                        f"Run '{run_name}' computation finished in {t1 - t0:.2f} seconds."
+                    )
+
                     store.release_run(run_name, "completed")
             except KeyboardInterrupt:
                 store.release_run(run_name, "interrupted")
@@ -432,7 +446,7 @@ class CSPSearchScreen:
 
         if runs_to_queue:
             self._state.active_run = runs_to_queue[-1][0]
-            
+
         self._state.invalidate()
         progress.finish()
 

@@ -1,28 +1,21 @@
-"""Post-hoc dedup simulation and distance-distribution analysis.
-
-Loads all structures for a run, computes pairwise descriptor distances,
-and simulates the 3-stage dedup pipeline in memory.  Produces summary
-statistics and optionally saves a distance histogram plot.
-"""
+import numpy as np
 
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
-import numpy as np
 from scipy.spatial.distance import pdist, squareform
-
-from rapmat.core.dedup import _to_pymatgen, forces_cosine_similarity
 
 try:
     from pymatgen.analysis.structure_matcher import StructureMatcher
 except ImportError:
     StructureMatcher = None  # type: ignore[assignment,misc]
 
+from rapmat.core.dedup import _to_pymatgen, forces_cosine_similarity
+
 
 @dataclass
 class DedupSimulationResult:
-    """Aggregated output of a dedup simulation run."""
 
     total: int = 0
     kept: int = 0
@@ -42,7 +35,6 @@ class DedupSimulationResult:
 
 
 def compute_pairwise_distances(vectors: np.ndarray) -> np.ndarray:
-    """Return the condensed pairwise L2 distance array via scipy."""
     return pdist(vectors, metric="euclidean")
 
 
@@ -58,21 +50,6 @@ def simulate_deduplication(
     force_cosine_threshold: float = 0.95,
     progress_callback=None,
 ) -> DedupSimulationResult:
-    """Simulate greedy dedup on a pre-fetched structure list.
-
-    Parameters
-    ----------
-    structures
-        Each dict must have ``id``, ``vector`` (np.ndarray or None),
-        ``energy_per_atom``, ``atoms`` (ASE Atoms), and ``forces``
-        (np.ndarray or None).
-    threshold
-        L2 distance below which two vectors are considered neighbours.
-    use_pymatgen / use_forces
-        Enable optional confirmation stages.
-    progress_callback
-        Called with ``(current_index, total, is_log)`` after each structure.
-    """
     result = DedupSimulationResult(total=len(structures))
 
     with_vec = [s for s in structures if s.get("vector") is not None]
@@ -164,10 +141,6 @@ def simulate_deduplication(
 
 
 def _greedy_dedup_count(dist_sq: np.ndarray, threshold: float) -> int:
-    """Fast Stage-1-only greedy dedup returning the number of kept structures.
-
-    Assumes rows are already sorted by energy (lowest first).
-    """
     N = dist_sq.shape[0]
     dropped: set[int] = set()
     for i in range(N):
@@ -187,13 +160,6 @@ def find_threshold_for_survival(
     max_distance: float,
     tolerance: int | None = None,
 ) -> tuple[float, int]:
-    """Binary-search for the L2 threshold that keeps *target_survival_ratio*.
-
-    Only Stage 1 (vector distance) is used -- pymatgen/forces are skipped
-    for speed.  Returns ``(threshold, kept_count)``.
-
-    *tolerance* defaults to ``max(1, N // 50)`` (2 % of N).
-    """
     with_vec = [s for s in structures if s.get("vector") is not None]
     if not with_vec:
         return 0.0, len(structures)
@@ -237,18 +203,6 @@ def plot_distance_histogram(
     title: str = "Pairwise Descriptor Distance Distribution",
     bins: int = 200,
 ) -> None:
-    """Save (or show) pairwise and closest-neighbor distance histograms.
-
-    Parameters
-    ----------
-    distances
-        Condensed distance array from ``scipy.spatial.distance.pdist``.
-    threshold
-        If given, draw a vertical line at this value on both plots.
-    save_path
-        File path to save the plot (PNG/SVG/PDF).  If *None*, calls
-        ``plt.show()`` interactively.
-    """
     import matplotlib
 
     if save_path is not None:

@@ -1,8 +1,6 @@
-"""Phase analysis screen for the Rapmat TUI."""
+import urwid
 
 from pathlib import Path
-
-import urwid
 
 from rapmat.tui.router import ScreenRouter
 from rapmat.tui.state import AppState
@@ -13,8 +11,6 @@ from rapmat.tui.widgets.progress import ProgressPanel
 
 
 class PhaseAnalysisScreen(BaseResultsScreen):
-    """Phase analysis viewer — supports unary, binary, and ternary+ systems."""
-
     title = "Phase Analysis"
 
     def __init__(self, state: "AppState", router: "ScreenRouter") -> None:
@@ -42,7 +38,7 @@ class PhaseAnalysisScreen(BaseResultsScreen):
             ("S", "Save Plot" if self._system_size == 2 else ""),
             ("Esc", "Back"),
         ]
-        # Filter out empty keys
+
         keys = [k for k in keys if k[1]]
         self._state.status_bar.set_keys(keys)
         if message:
@@ -61,32 +57,27 @@ class PhaseAnalysisScreen(BaseResultsScreen):
         return self._outer_placeholder
 
     def _start_async_fetch(self) -> None:
-        """Run phase analysis computation in a background thread."""
         panel = ProgressPanel(title=" Phase Analysis ")
         panel.set_progress(0, 1, "Computing phase analysis...")
         panel.add_log("Loading structures from database...")
 
-        # Show the progress panel centered
         loading_widget = urwid.Filler(urwid.BoxAdapter(panel, 10), valign="middle")
         if self._outer_placeholder is not None:
             self._outer_placeholder.original_widget = loading_widget
 
         loop = self._state.loop
         if loop is None:
-            # Fallback: synchronous fetch
             self._fetch_data()
             self._main_frame = self._build_frame()
             if self._outer_placeholder is not None:
                 self._outer_placeholder.original_widget = self._main_frame
             return
 
-        # Capture state needed by the worker
         _store = self._state.store
         _active_study = self._state.active_study
         _show_all = self._show_all
         _hull_cutoff = self._hull_cutoff
 
-        # Mutable container for results from the worker thread
         _result_box: dict = {}
 
         def _worker(progress) -> None:
@@ -106,21 +97,32 @@ class PhaseAnalysisScreen(BaseResultsScreen):
             symprec = study.get("config", {}).get("symprec", 1e-3)
             system = study.get("system", "")
             from rapmat.utils.common import parse_system
+
             elements = parse_system(system)
             system_size = len(elements)
 
-            progress.log(f"System: {system} ({system_size} element{'s' if system_size != 1 else ''})")
+            progress.log(
+                f"System: {system} ({system_size} element{'s' if system_size != 1 else ''})"
+            )
 
             if system_size < 2:
                 from rapmat.core.hull import build_energy_ranking
+
                 progress.log("Building energy ranking...")
-                sd = build_energy_ranking(_store, str(study_id), show_all=_show_all, hull_cutoff=_hull_cutoff)
+                sd = build_energy_ranking(
+                    _store, str(study_id), show_all=_show_all, hull_cutoff=_hull_cutoff
+                )
                 use_enthalpy = False
             else:
                 from rapmat.core.hull import build_phase_diagram
+
                 progress.log("Building phase diagram...")
                 _, sd, use_enthalpy = build_phase_diagram(
-                    _store, str(study_id), symprec=symprec, show_all=_show_all, hull_cutoff=_hull_cutoff
+                    _store,
+                    str(study_id),
+                    symprec=symprec,
+                    show_all=_show_all,
+                    hull_cutoff=_hull_cutoff,
                 )
 
             progress.update(1, 1, f"Done — {len(sd)} structures")
@@ -159,7 +161,6 @@ class PhaseAnalysisScreen(BaseResultsScreen):
         self._loading_task.start()
 
     def _apply_fetch_result(self, box: dict) -> None:
-        """Apply results from the background worker to self."""
         self._study_id = box.get("study_id", "")
         self._study_system = box.get("system", "")
         self._system_size = box.get("system_size", 0)
@@ -179,7 +180,9 @@ class PhaseAnalysisScreen(BaseResultsScreen):
             if "atoms" in data:
                 self._structures.append(data["atoms"])
 
-        self.title = f"Phase Analysis: {self._study_system} | {len(self._results)} structures"
+        self.title = (
+            f"Phase Analysis: {self._study_system} | {len(self._results)} structures"
+        )
         is_bulk = study.get("domain", "bulk") == "bulk"
         self._show_thickness = (not is_bulk) and any(
             r.get("thickness") is not None for r in self._results
@@ -193,7 +196,6 @@ class PhaseAnalysisScreen(BaseResultsScreen):
         )
 
     def _fetch_data(self) -> None:
-        """Synchronous fallback (used when event loop is not available)."""
         study_id = self._state.active_study
         if not study_id:
             return
@@ -209,28 +211,44 @@ class PhaseAnalysisScreen(BaseResultsScreen):
         symprec = study.get("config", {}).get("symprec", 1e-3)
         system = study.get("system", "")
         from rapmat.utils.common import parse_system
+
         elements = parse_system(system)
         system_size = len(elements)
 
         if system_size < 2:
             from rapmat.core.hull import build_energy_ranking
-            sd = build_energy_ranking(store, str(study_id), show_all=self._show_all, hull_cutoff=self._hull_cutoff)
+
+            sd = build_energy_ranking(
+                store,
+                str(study_id),
+                show_all=self._show_all,
+                hull_cutoff=self._hull_cutoff,
+            )
             use_enthalpy = False
         else:
             from rapmat.core.hull import build_phase_diagram
+
             _, sd, use_enthalpy = build_phase_diagram(
-                store, str(study_id), symprec=symprec, show_all=self._show_all, hull_cutoff=self._hull_cutoff
+                store,
+                str(study_id),
+                symprec=symprec,
+                show_all=self._show_all,
+                hull_cutoff=self._hull_cutoff,
             )
 
-        box.update({
-            "study_id": str(study_id), "study": study,
-            "system": system, "system_size": system_size,
-            "sd": sd, "use_enthalpy": use_enthalpy,
-        })
+        box.update(
+            {
+                "study_id": str(study_id),
+                "study": study,
+                "system": system,
+                "system_size": system_size,
+                "sd": sd,
+                "use_enthalpy": use_enthalpy,
+            }
+        )
         self._apply_fetch_result(box)
 
     def _columns_def(self) -> list[tuple[str, int]]:
-        # Core columns per system size
         if self._system_size < 2:
             cols = [
                 ("Formula", 14),
@@ -254,7 +272,6 @@ class PhaseAnalysisScreen(BaseResultsScreen):
                 ("E_form", 10),
                 ("EAH", 10),
             ]
-        # Optional columns (shared across all system sizes)
         if self._show_thickness:
             cols.append(("Thick(A)", 9))
         if self._show_dynamical_stability:
@@ -282,7 +299,6 @@ class PhaseAnalysisScreen(BaseResultsScreen):
             eah = f"{result.get('energy_above_hull', 0.0):.4f}"
             row = [formula, spg, f"{epa:.4f}", e_form, eah]
 
-        # Optional columns (must match _columns_def order)
         if self._show_thickness:
             t = result.get("thickness")
             row.append("" if t is None else f"{t:.2f}")
@@ -306,15 +322,24 @@ class PhaseAnalysisScreen(BaseResultsScreen):
         if self._system_size >= 2:
             if "formation_energy" in result:
                 extra.append(
-                    ("details", f"Formation Energy: {result['formation_energy']:.4f} eV/atom\n")
+                    (
+                        "details",
+                        f"Formation Energy: {result['formation_energy']:.4f} eV/atom\n",
+                    )
                 )
             if "energy_above_hull" in result:
                 extra.append(
-                    ("details", f"Energy Above Hull: {result['energy_above_hull']:.4f} eV/atom\n")
+                    (
+                        "details",
+                        f"Energy Above Hull: {result['energy_above_hull']:.4f} eV/atom\n",
+                    )
                 )
             if "is_stable" in result:
                 extra.append(
-                    ("details", f"Hull Stable: {'Yes' if result['is_stable'] else 'No'}\n")
+                    (
+                        "details",
+                        f"Hull Stable: {'Yes' if result['is_stable'] else 'No'}\n",
+                    )
                 )
         return extra
 

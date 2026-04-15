@@ -1,9 +1,7 @@
-"""Evaluation screen for the Rapmat TUI."""
-
 import json
-from typing import List
-
 import urwid
+
+from typing import List
 
 from rapmat.tui.widgets.form import (
     FormGroup,
@@ -40,15 +38,19 @@ _RESULT_COLS = [
 
 
 class EvalScreen:
-    """Run evaluation against a reference calculator."""
-
     title = "Evaluation"
 
     @property
     def breadcrumb_title(self) -> str:
         return f"Evaluation: {self._run_name}" if self._run_name else self.title
 
-    def __init__(self, state: "AppState", router: "ScreenRouter", run_name: str, filtered_ids: list[str] | None = None) -> None:
+    def __init__(
+        self,
+        state: "AppState",
+        router: "ScreenRouter",
+        run_name: str,
+        filtered_ids: list[str] | None = None,
+    ) -> None:
         self._state = state
         self._router = router
         self._run_name = run_name
@@ -98,9 +100,7 @@ class EvalScreen:
                 dropdown_field(
                     "calculator", "Ref calculator", _calc_options(), default=0
                 ),
-                text_field(
-                    "calculator_config", "Config TOML Path", default=""
-                ),
+                text_field("calculator_config", "Config TOML Path", default=""),
                 int_field("top_n", "Top N (0=all)", default=0),
                 checkbox_field("run_phonons", "Run phonons", default=False),
                 checkbox_field("stable_only", "Dyn. stable only (tau)", default=False),
@@ -122,7 +122,7 @@ class EvalScreen:
             "menu_item",
             focus_map="btn_focus",
         )
-        
+
         clear_btn = urwid.AttrMap(
             urwid.Button("Clear Cache [Del]", on_press=self._on_clear_cache),
             "menu_item",
@@ -156,7 +156,7 @@ class EvalScreen:
         self._main_body = body
 
         self._update_footer()
-        
+
         self._widget = urwid.WidgetPlaceholder(urwid.Frame(body=body))
         return self._widget
 
@@ -183,7 +183,9 @@ class EvalScreen:
             self._widget.original_widget = current_body
             if confirmed:
                 self._state.store.clear_evaluations(run_name)
-                self._error_text.set_text(("success", f"Cache cleared for run '{run_name}'"))
+                self._error_text.set_text(
+                    ("success", f"Cache cleared for run '{run_name}'")
+                )
                 self._results_pile.contents[:] = []
                 self._update_footer()
 
@@ -209,15 +211,15 @@ class EvalScreen:
         self._results_pile.contents[:] = []
 
         vals = self._form.get_values()
-        
+
         run_name = self._run_name
         if not run_name:
             self._error_text.set_text(("form_error", "No active run selected"))
             self._running = False
             return
-            
+
         vals["run_name"] = run_name
-        
+
         calc_config_dict = {}
         calc_config_path = vals.get("calculator_config", "").strip()
         if calc_config_path:
@@ -273,16 +275,20 @@ class EvalScreen:
 
         progress.log(f"Loading structures for '{run_name}'...")
         records = store.get_run_structures(run_name, status="relaxed")
-        
+
         initial_count = len(records)
-        
+
         if self._filtered_ids is not None:
             valid_ids = set(self._filtered_ids)
             records = [r for r in records if r["id"] in valid_ids]
-            progress.log(f"Excluded {initial_count - len(records)} structures hidden by Results filters")
+            progress.log(
+                f"Excluded {initial_count - len(records)} structures hidden by Results filters"
+            )
         else:
             records = [r for r in records if r.get("converged", False)]
-            progress.log(f"Excluded {initial_count - len(records)} unconverged structures")
+            progress.log(
+                f"Excluded {initial_count - len(records)} unconverged structures"
+            )
 
         records.sort(key=lambda r: r["energy_per_atom"])
 
@@ -300,7 +306,7 @@ class EvalScreen:
             config_dict["phonon_supercell"] = vals.get("phonon_supercell", (3, 3, 3))
             config_dict["phonon_mesh"] = vals.get("phonon_mesh", (20, 20, 20))
             config_dict["phonon_displacement"] = vals.get("phonon_displacement", 1e-2)
-            
+
         config_json = json.dumps(config_dict, sort_keys=True)
 
         pending = [
@@ -344,7 +350,11 @@ class EvalScreen:
                 )
 
         evals = store.get_evaluations(run_name, calculator=calculator_name)
-        eval_map = {ev["structure_id"]: ev for ev in evals if ev.get("config_json") == config_json}
+        eval_map = {
+            ev["structure_id"]: ev
+            for ev in evals
+            if ev.get("config_json") == config_json
+        }
 
         comparison = []
         for rec in records:

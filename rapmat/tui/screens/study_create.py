@@ -1,5 +1,3 @@
-"""Study create screen for the Rapmat TUI."""
-
 import urwid
 
 from rapmat.tui.widgets.dialog import ModalDialog
@@ -19,11 +17,13 @@ from rapmat.tui.state import AppState
 
 def _get_calculator_options() -> list[str]:
     from rapmat.calculators import Calculators
+
     return [c.value for c in Calculators]
 
 
 def _validate_system(v: str) -> str | None:
     from rapmat.utils.common import parse_system
+
     try:
         parse_system(v)
         return None
@@ -43,8 +43,6 @@ def _validate_thickness(v: str) -> str | None:
 
 
 class StudyCreateScreen:
-    """Create a new phase diagram study."""
-
     title = "New Study"
 
     def __init__(self, state: "AppState", router: "ScreenRouter") -> None:
@@ -100,16 +98,13 @@ class StudyCreateScreen:
                     default="",
                 ),
                 float_field("pressure", "Pressure (GPa)", default=0.0),
-                # Convergence section
                 float_field("force_conv_crit", "Force conv. crit", default=5e-2),
                 int_field("steps_max", "Max steps", default=500),
-                # Dedup section
                 checkbox_field("dedup", "Dedup", default=False),
                 float_field("dedup_threshold", "Dedup threshold", default=1e-2),
                 checkbox_field("pymatgen_dedup", "Pymatgen dedup", default=False),
                 checkbox_field("force_dedup", "Force dedup", default=False),
                 float_field("force_cosine", "Force cosine thresh", default=0.95),
-                # Sanity section
                 float_field("min_dist", "Min distance (Å)", default=0.5),
                 checkbox_field("sanity_pymatgen", "Sanity pymatgen", default=False),
                 float_field("symprec", "Symmetry precision", default=1e-5),
@@ -153,11 +148,9 @@ class StudyCreateScreen:
         self._main_body = urwid.Padding(scrollable, left=2, right=2)
         self._frame = urwid.Frame(body=self._main_body)
 
-        # Signal connection for dynamic field toggle
         domain_widget = self._form.get_widget("domain")
         if domain_widget:
             urwid.connect_signal(domain_widget, "change", self._on_domain_change)
-            # Initialize state (Domain defaults to 0 -> "bulk")
             self._form.set_field_disabled("thickness_cutoff", disabled=True)
 
         self._update_footer()
@@ -165,7 +158,9 @@ class StudyCreateScreen:
 
     def _on_domain_change(self, _widget, new_value: str) -> None:
         if self._form:
-            self._form.set_field_disabled("thickness_cutoff", disabled=(new_value != "monolayer"))
+            self._form.set_field_disabled(
+                "thickness_cutoff", disabled=(new_value != "monolayer")
+            )
 
     def on_resume(self) -> None:
         self._update_footer()
@@ -211,15 +206,20 @@ class StudyCreateScreen:
         if calculator_config_path:
             import tomllib
             from pathlib import Path
+
             config_file = Path(calculator_config_path)
             if not config_file.is_file():
-                self._error_text.set_text(("form_error", f"  Config file not found: {calculator_config_path}"))
+                self._error_text.set_text(
+                    ("form_error", f"  Config file not found: {calculator_config_path}")
+                )
                 return
             try:
                 with open(config_file, "rb") as f:
                     calc_config_dict = tomllib.load(f)
             except Exception as e:
-                self._error_text.set_text(("form_error", f"  Invalid TOML in config: {e}"))
+                self._error_text.set_text(
+                    ("form_error", f"  Invalid TOML in config: {e}")
+                )
                 return
 
         try:
@@ -263,7 +263,7 @@ class StudyCreateScreen:
                     "sanity_pymatgen": vals["sanity_pymatgen"],
                     "sanity_pymatgen_tol": 0.5,
                     "symprec": vals["symprec"],
-                }
+                },
             )
         except Exception as exc:
             self._error_text.set_text(("form_error", f"  Error: {exc}"))

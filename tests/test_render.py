@@ -1,6 +1,7 @@
 import sys
 import urwid
 
+
 def test_render():
     from rapmat.db_config import resolve_store
     from rapmat.tui.app import RapmatApp
@@ -10,10 +11,10 @@ def test_render():
     store = resolve_store()
     state = AppState(store=store, db_url="test")
     app = RapmatApp(state)
-    
+
     screen = HomeScreen(state, app._router)
     widget = screen.build()
-    
+
     # The crash occurred at 121x13
     size = (121, 13)
     try:
@@ -23,6 +24,7 @@ def test_render():
     except Exception as e:
         print("Crash:", e)
         sys.exit(1)
+
 
 if __name__ == "__main__":
     test_render()
