@@ -279,7 +279,7 @@ class BaseResultsScreen:
             res = [
                 r
                 for r in res
-                if _dyn_stability(r, self._phonon_cutoff) is not False
+                if _dyn_stability(r, self._phonon_cutoff) is True
             ]
         if self._search_query:
             q = self._search_query
@@ -459,7 +459,7 @@ class BaseResultsScreen:
         self._hide_dyn_unstable = not self._hide_dyn_unstable
         self._rebuild_table()
         self._show_message(
-            "Hiding unstable." if self._hide_dyn_unstable else "Showing unstable."
+            "Showing only stable." if self._hide_dyn_unstable else "Showing all."
         )
 
     def _action_thickness(self) -> None:
