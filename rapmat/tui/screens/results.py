@@ -14,13 +14,13 @@ class ResultsScreen(BaseResultsScreen):
         if not self._state.status_bar:
             return
         keys = [
-            ("u", "Unconverged"),
-            ("t", "Thickness"),
-            ("d", "Duplicates"),
+            ("u", "Uncv"),
+            ("t", "Thk"),
+            ("d", "Dup"),
             ("/", "Search"),
             ("s", "Save"),
-            ("p", "Phonons"),
-            ("v", "Evaluation"),
+            ("p", "Phon"),
+            ("v", "Eval"),
             ("Esc", "Back"),
         ]
         self._state.status_bar.set_keys(keys)
