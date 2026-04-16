@@ -166,11 +166,6 @@ class DbSettingsScreen:
                 ("pack", self._status_text),
                 ("pack", urwid.Divider()),
                 ("pack", btn_row),
-                ("pack", urwid.Divider()),
-                (
-                    "pack",
-                    urwid.Text(("footer", "  Tab Navigate  Esc Back"), align="left"),
-                ),
             ]
         )
 

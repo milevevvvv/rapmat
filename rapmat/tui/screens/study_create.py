@@ -55,6 +55,7 @@ class StudyCreateScreen:
 
         self._form = FormGroup(
             fields=[
+                # --- System ---
                 text_field(
                     key="system",
                     label="System",
@@ -73,12 +74,14 @@ class StudyCreateScreen:
                     options=["bulk", "monolayer"],
                     default=0,
                 ),
+                float_field("pressure", "Pressure (GPa)", default=0.0),
                 text_field(
                     key="thickness_cutoff",
                     label="Monolayer Thick. (Å)",
                     default="",
                     validator=_validate_thickness,
                 ),
+                # --- Relaxation ---
                 dropdown_field(
                     key="calculator",
                     label="Calculator",
@@ -90,19 +93,38 @@ class StudyCreateScreen:
                     label="Config TOML Path",
                     default="",
                 ),
-                float_field("pressure", "Pressure (GPa)", default=0.0),
                 float_field("force_conv_crit", "Force conv. crit", default=5e-2),
                 int_field("steps_max", "Max steps", default=500),
+
+                # --- Deduplication ---
                 checkbox_field("dedup", "Dedup", default=False),
                 float_field("dedup_threshold", "Dedup threshold", default=1e-2),
                 checkbox_field("pymatgen_dedup", "Pymatgen dedup", default=False),
                 checkbox_field("force_dedup", "Force dedup", default=False),
                 float_field("force_cosine", "Force cosine thresh", default=0.95),
                 float_field("min_dist", "Min distance (Å)", default=0.5),
+
+                # --- Etc ---
                 checkbox_field("sanity_pymatgen", "Sanity pymatgen", default=False),
                 float_field("symprec", "Symmetry precision", default=1e-5),
             ],
             label_width=22,
+            groups=[
+                ("System", [
+                    "system", "name", "domain", "pressure", "thickness_cutoff",
+                ]),
+                ("Relaxation", [
+                    "calculator", "calculator_config",
+                    "force_conv_crit", "steps_max",
+                ]),
+                ("Deduplication", [
+                    "dedup", "dedup_threshold", "pymatgen_dedup",
+                    "force_dedup", "force_cosine", "min_dist",
+                ]),
+                ("Misc", [
+                    "sanity_pymatgen", "symprec",
+                ]),
+            ],
         )
 
         self._error_text = urwid.Text("")
@@ -130,6 +152,7 @@ class StudyCreateScreen:
                 ("pack", self._error_text),
                 ("pack", urwid.Divider()),
                 ("pack", btn_row),
+                ("pack", urwid.Divider()),
             ]
         )
 
