@@ -93,8 +93,8 @@ class StudyCreateScreen:
                     label="Config TOML Path",
                     default="",
                 ),
-                float_field("force_conv_crit", "Force conv. crit", default=5e-2),
-                int_field("steps_max", "Max steps", default=500),
+                float_field("force_conv_crit", "Force conv. crit", default=5e-3),
+                int_field("steps_max", "Max steps", default=2000),
 
                 # --- Deduplication ---
                 checkbox_field("dedup", "Dedup", default=False),
