@@ -17,6 +17,7 @@ class ResultsScreen(BaseResultsScreen):
             ("u", "Uncv"),
             ("t", "Thk"),
             ("d", "Dup"),
+            ("y", "Dyn"),
             ("/", "Search"),
             ("s", "Save"),
             ("p", "Phon"),
