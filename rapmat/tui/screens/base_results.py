@@ -170,6 +170,7 @@ class BaseResultsScreen:
         self._hide_unconverged: bool = True
         self._hide_thick: bool = False
         self._hide_duplicates: bool = False
+        self._hide_dyn_unstable: bool = False
         self._search_query: str = ""
 
         self._show_thickness: bool = False
@@ -274,6 +275,12 @@ class BaseResultsScreen:
             ]
         if self._hide_duplicates:
             res = [r for r in res if r.get("duplicate") is not True]
+        if self._hide_dyn_unstable:
+            res = [
+                r
+                for r in res
+                if _dyn_stability(r, self._phonon_cutoff) is not False
+            ]
         if self._search_query:
             q = self._search_query
             res = [
@@ -443,6 +450,16 @@ class BaseResultsScreen:
         self._rebuild_table()
         self._show_message(
             "Hiding duplicates." if self._hide_duplicates else "Showing duplicates."
+        )
+
+    def _action_toggle_unstable(self) -> None:
+        if not self._show_dynamical_stability:
+            self._show_message("No phonon data. Run phonon calculation first.")
+            return
+        self._hide_dyn_unstable = not self._hide_dyn_unstable
+        self._rebuild_table()
+        self._show_message(
+            "Hiding unstable." if self._hide_dyn_unstable else "Showing unstable."
         )
 
     def _action_thickness(self) -> None:
@@ -658,6 +675,9 @@ class BaseResultsScreen:
             return None
         if key in ("d", "D"):
             self._action_toggle_duplicates()
+            return None
+        if key in ("y", "Y"):
+            self._action_toggle_unstable()
             return None
         if key in ("s",):
             self._action_save()
