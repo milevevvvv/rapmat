@@ -152,6 +152,7 @@ class StudyCreateScreen:
                 ("pack", self._error_text),
                 ("pack", urwid.Divider()),
                 ("pack", btn_row),
+                ("pack", urwid.Divider()),
             ]
         )
 
