@@ -115,35 +115,111 @@ def tuple_field(
 
 
 # ------------------------------------------------------------------ #
+#  Focus-aware group box
+# ------------------------------------------------------------------ #
+
+
+def create_focus_group(title: str, content: urwid.Widget) -> urwid.Widget:
+    """Wrap *content* in a LineBox that highlights when any child is focused."""
+    inner = urwid.AttrMap(content, "body")
+    box = urwid.LineBox(
+        inner,
+        title=title,
+        title_attr="dim_title",
+        title_align="center",
+    )
+    return urwid.AttrMap(
+        box,
+        "dim_border",
+        focus_map={
+            None: "focus_border",
+            "dim_title": "focus_title",
+        },
+    )
+
+
+# ------------------------------------------------------------------ #
 #  FormGroup
 # ------------------------------------------------------------------ #
 
 
 class FormGroup(urwid.WidgetWrap):
-    def __init__(self, fields: list[_FieldSpec], label_width: int = 20) -> None:
+    """A form with optional focus-aware group sections.
+
+    Parameters
+    ----------
+    fields:
+        Flat list of ``_FieldSpec`` objects.
+    label_width:
+        Fixed column width for the label text.
+    groups:
+        Optional list of ``(title, [field_key, ...])`` tuples.  When
+        provided, fields are organised into named LineBox groups that
+        visually highlight on focus.  Any field key **not** listed in
+        *groups* is appended to a trailing unnamed section.
+    """
+
+    def __init__(
+        self,
+        fields: list[_FieldSpec],
+        label_width: int = 20,
+        groups: list[tuple[str, list[str]]] | None = None,
+    ) -> None:
         self._fields = fields
         self._label_width = label_width
-        pile = urwid.Pile(self._build_rows())
+        self._row_by_key: dict[str, urwid.Columns] = {}
+        pile = urwid.Pile(self._build_rows(groups))
         super().__init__(pile)
 
     # ------------------------------------------------------------------ #
     #  Layout
     # ------------------------------------------------------------------ #
 
-    def _build_rows(self) -> list[urwid.Widget]:
-        rows: list[urwid.Widget] = []
-        for spec in self._fields:
-            label = urwid.Text(("form_label", spec.label + ":"), align="right")
-            field_widget = urwid.AttrMap(spec.widget, None, focus_map="focus")
-            row = urwid.Columns(
-                [
-                    (self._label_width, label),
-                    ("weight", 1, field_widget),
-                ],
-                dividechars=1,
-            )
-            rows.append(row)
-        return rows
+    def _make_row(self, spec: _FieldSpec) -> urwid.Columns:
+        label = urwid.Text(("form_label", spec.label + ":"), align="right")
+        field_widget = urwid.AttrMap(spec.widget, None, focus_map="focus")
+        row = urwid.Columns(
+            [
+                (self._label_width, label),
+                ("weight", 1, field_widget),
+            ],
+            dividechars=1,
+        )
+        self._row_by_key[spec.key] = row
+        return row
+
+    def _build_rows(
+        self, groups: list[tuple[str, list[str]]] | None = None
+    ) -> list[urwid.Widget]:
+        spec_by_key = {s.key: s for s in self._fields}
+
+        if groups is None:
+            return [self._make_row(s) for s in self._fields]
+
+        widgets: list[urwid.Widget] = []
+        used_keys: set[str] = set()
+
+        for title, keys in groups:
+            group_rows: list[urwid.Widget] = []
+            for key in keys:
+                spec = spec_by_key.get(key)
+                if spec is None:
+                    continue
+                group_rows.append(self._make_row(spec))
+                used_keys.add(key)
+            if group_rows:
+                pile = urwid.Pile(group_rows)
+                widgets.append(create_focus_group(title, pile))
+                widgets.append(urwid.Divider())
+
+        # Any leftover fields not assigned to a group
+        leftovers = [s for s in self._fields if s.key not in used_keys]
+        if leftovers:
+            leftover_rows = [self._make_row(s) for s in leftovers]
+            pile = urwid.Pile(leftover_rows)
+            widgets.append(create_focus_group("Other", pile))
+
+        return widgets
 
     # ------------------------------------------------------------------ #
     #  Public API
@@ -189,9 +265,11 @@ class FormGroup(urwid.WidgetWrap):
         return None
 
     def set_field_disabled(self, key: str, disabled: bool) -> None:
-        for i, spec in enumerate(self._fields):
+        for spec in self._fields:
             if spec.key == key:
-                row = self._w.contents[i][0]
+                row = self._row_by_key.get(key)
+                if row is None:
+                    break
                 attr_map = row.contents[1][0]
                 if disabled and not isinstance(
                     attr_map.original_widget, urwid.WidgetDisable

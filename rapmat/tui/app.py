@@ -29,7 +29,6 @@ PALETTE = [
     ("menu_item", "light gray", "default"),
     ("menu_focus", "white", "dark green", "standout"),
     ("dialog", "white", "dark gray"),
-    ("btn", "dark gray", "default"),
     ("btn_focus", "white", "dark green", "bold"),
     ("dropdown_hl", "white", "dark green"),
     ("menu_back", "light gray", "dark magenta"),
@@ -42,6 +41,8 @@ PALETTE = [
     ("cpu_tag", "light gray", "dark blue"),
     ("focus_border", "light cyan", "default", "bold"),
     ("focus_title", "light cyan", "default", "bold"),
+    ("dim_border", "dark gray", "default"),
+    ("dim_title", "dark gray", "default", "bold"),
 ]
 
 
