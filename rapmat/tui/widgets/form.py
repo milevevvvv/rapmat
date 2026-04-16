@@ -212,7 +212,6 @@ class FormGroup(urwid.WidgetWrap):
                 widgets.append(create_focus_group(title, pile))
                 widgets.append(urwid.Divider())
 
-        # Any leftover fields not assigned to a group
         leftovers = [s for s in self._fields if s.key not in used_keys]
         if leftovers:
             leftover_rows = [self._make_row(s) for s in leftovers]
