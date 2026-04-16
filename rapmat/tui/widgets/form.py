@@ -120,7 +120,6 @@ def tuple_field(
 
 
 def create_focus_group(title: str, content: urwid.Widget) -> urwid.Widget:
-    """Wrap *content* in a LineBox that highlights when any child is focused."""
     inner = urwid.AttrMap(content, "body")
     box = urwid.LineBox(
         inner,
@@ -144,20 +143,6 @@ def create_focus_group(title: str, content: urwid.Widget) -> urwid.Widget:
 
 
 class FormGroup(urwid.WidgetWrap):
-    """A form with optional focus-aware group sections.
-
-    Parameters
-    ----------
-    fields:
-        Flat list of ``_FieldSpec`` objects.
-    label_width:
-        Fixed column width for the label text.
-    groups:
-        Optional list of ``(title, [field_key, ...])`` tuples.  When
-        provided, fields are organised into named LineBox groups that
-        visually highlight on focus.  Any field key **not** listed in
-        *groups* is appended to a trailing unnamed section.
-    """
 
     def __init__(
         self,
@@ -210,7 +195,7 @@ class FormGroup(urwid.WidgetWrap):
             if group_rows:
                 pile = urwid.Pile(group_rows)
                 widgets.append(create_focus_group(title, pile))
-                widgets.append(urwid.Divider())
+                #widgets.append(urwid.Divider())
 
         leftovers = [s for s in self._fields if s.key not in used_keys]
         if leftovers:
