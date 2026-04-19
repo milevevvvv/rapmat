@@ -76,11 +76,27 @@ def run_eval_loop(
             )
         except Exception as e:
             import traceback
+            import os
+            from pathlib import Path
 
             err_msg = f"Failed to evaluate structure {rec['id']}: {e}"
             if log_callback:
                 log_callback(err_msg)
                 log_callback(traceback.format_exc())
+
+                calc_dir = getattr(calculator, "directory", None)
+                if calc_dir and os.path.exists(calc_dir):
+                    for out_file in ["vasp.out", "OUTCAR"]:
+                        fpath = Path(calc_dir) / out_file
+                        if fpath.exists():
+                            log_callback(f"--- START OF {out_file} ---")
+                            try:
+                                with open(fpath, "r", encoding="utf-8", errors="replace") as f:
+                                    log_callback(f.read())
+                            except Exception as read_e:
+                                log_callback(f"Failed to read {out_file}: {read_e}")
+                            log_callback(f"--- END OF {out_file} ---")
+
             else:
                 err_console.print(f"[red]{err_msg}[/red]")
 
