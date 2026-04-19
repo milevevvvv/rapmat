@@ -115,7 +115,6 @@ def cleanup_calculator_files(calculator) -> None:
             "PCDAT",
             "XDATCAR",
             "CONTCAR",
-            "vasp.out",
             "vasp*.lock",
         ]:
             fpath = Path(calculator.directory) / fname
